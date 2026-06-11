@@ -28,6 +28,11 @@ export const ALL_BOOKMAKERS = [
 
 export type BookmakerKey = typeof ALL_BOOKMAKERS[number]['key'];
 
+// Bookmakers that offer a tax-free game mode (no 12% tax on winnings).
+// Confirmed: Betclic. STS and others charge the standard tax — extend this
+// list as more tax-free modes are confirmed.
+export const TAX_FREE_BOOKMAKER_KEYS: string[] = ['betclic'];
+
 export interface UserSettings {
   selectedBookmakers: string[]; // which bookmakers user has accounts at
   notificationsEnabled: boolean;

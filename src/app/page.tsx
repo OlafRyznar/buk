@@ -10,6 +10,8 @@ import {
   getNearArbitrageOpportunities,
 } from "@/lib/data-service";
 
+// Always read the latest scraped data — it refreshes in the background.
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const [stats, arbitrages, nearArbitrages, events] = await Promise.all([
@@ -20,32 +22,43 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-7">
-      <section className="glass-panel rounded-2xl p-6 sm:p-7">
-        <p className="feature-pill">Aplikacja Arbitrażu Bukmacherskiego</p>
-        <h1 className="mt-3 max-w-4xl text-3xl font-semibold text-white sm:text-4xl">
-          Prosty panel do arbitrażu: najważniejsze informacje na pierwszym ekranie.
-        </h1>
-        <p className="mt-3 max-w-3xl text-base leading-7 text-white/70">
-          Bez przeładowania i bez chaosu. Otrzymujesz czytelny podgląd rynku, szybki dostęp do kalkulatora,
-          radar okazji oraz konkretne moduły analityczne.
+    <div className="w-full space-y-10">
+      <section className="glass-panel relative overflow-hidden rounded-xl p-6 sm:p-8">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-sky-500/[0.13] blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-28 left-1/3 h-64 w-64 rounded-full bg-emerald-400/[0.07] blur-3xl"
+        />
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-300/80">
+          BukScan · skaner arbitrażu
         </p>
-        <div className="mt-5 flex flex-wrap gap-2">
+        <h1 className="mt-3 max-w-3xl text-2xl font-bold tracking-tight text-white sm:text-4xl sm:leading-[1.15]">
+          Surebety i okazje arbitrażowe{" "}
+          <span className="text-gradient">w jednym miejscu</span>.
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/55">
+          Skaner kursów z {stats.totalBookmakers} bukmacherów, podgląd rynku i natychmiastowa
+          kalkulacja stawek — bez zbędnego chaosu.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-2">
           <Link
             href="/arbitrage"
-            className="rounded-lg border border-white/20 bg-white/8 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/12"
+            className="btn-primary rounded-lg px-4 py-2 text-xs font-semibold text-white"
           >
             Przejdź do okazji
           </Link>
           <Link
-            href="/calculator"
-            className="rounded-lg border border-sky-400/35 bg-sky-400/14 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-400/20"
+            href="/events"
+            className="rounded-lg bg-white/[0.06] border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/[0.12]"
           >
-            Otwórz kalkulator
+            Przeglądaj wydarzenia
           </Link>
           <Link
             href="/settings"
-            className="rounded-lg border border-white/16 bg-transparent px-4 py-2 text-sm font-medium text-white/84 transition hover:bg-white/8"
+            className="rounded-lg border border-white/10 bg-transparent px-4 py-2 text-xs font-semibold text-white/80 transition hover:bg-white/[0.06]"
           >
             Ustawienia
           </Link>
@@ -106,10 +119,10 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="glass-panel rounded-2xl p-5 sm:p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-xl font-semibold text-white">Aktualne okazje</h2>
-          <span className="rounded-md border border-white/14 bg-white/6 px-2.5 py-1 text-xs text-white/76">
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
+          <h2 className="text-lg font-bold text-white">Aktualne okazje</h2>
+          <span className="text-xs text-white/40 font-medium">
             {arbitrages.length} surebetów live
           </span>
         </div>
@@ -121,14 +134,14 @@ export default async function DashboardPage() {
             ))}
           </div>
         ) : (
-          <p className="rounded-lg border border-white/12 bg-white/6 p-4 text-sm text-white/68">
+          <p className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-xs text-white/50">
             Aktualnie brak surebetów. System dalej skanuje rynek.
           </p>
         )}
 
         {nearArbitrages.length > 0 && (
-          <details className="mt-4 rounded-lg border border-white/12 bg-white/6 p-3">
-            <summary className="cursor-pointer text-sm font-medium text-white">
+          <details className="mt-4 rounded-xl border border-white/8 bg-transparent p-3">
+            <summary className="cursor-pointer text-xs font-semibold text-white/80 select-none">
               Pokaż watchlistę blisko progu ({nearArbitrages.length})
             </summary>
             <div className="mt-3">
@@ -153,24 +166,6 @@ export default async function DashboardPage() {
             <EventCard key={event.id} event={event} compact />
           ))}
         </div>
-      </section>
-
-      <section className="glass-panel rounded-2xl p-6">
-        <h2 className="text-xl font-semibold text-white">Jak to działa w 3 krokach</h2>
-        <ol className="mt-4 space-y-3">
-          {[
-            "Porównujesz kursy z wielu bukmacherów w jednym miejscu.",
-            "System wykrywa układy z marżą poniżej 100%.",
-            "Kalkulator dzieli stawki i pokazuje gwarantowany wynik.",
-          ].map((step, index) => (
-            <li key={step} className="flex items-start gap-3 text-sm text-white/74">
-              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/18 bg-white/8 text-xs font-semibold text-white">
-                {index + 1}
-              </span>
-              <span>{step}</span>
-            </li>
-          ))}
-        </ol>
       </section>
 
     </div>

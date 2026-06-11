@@ -5,6 +5,8 @@ import { EventWithOdds, BOOKMAKER_LOGOS } from "@/lib/types";
 import { impliedProbability } from "@/lib/arbitrage";
 import { ALL_BOOKMAKERS } from "@/lib/store-types";
 import { RedirectWarningModal } from "./RedirectWarningModal";
+import TeamFlag from "./TeamFlag";
+import WatchlistButton from "./WatchlistButton";
 import Link from "next/link";
 
 interface EventCardProps {
@@ -23,18 +25,23 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
         <span className="rounded-full border border-white/14 bg-white/8 px-3 py-1 text-xs uppercase tracking-[0.18em] text-white/56">
           {event.sportTitle}
         </span>
-        <span className="text-xs text-white/55">
-          {new Date(event.commenceTime).toLocaleString("pl-PL", {
-            dateStyle: "short",
-            timeStyle: "short",
-          })}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-white/55">
+            {new Date(event.commenceTime).toLocaleString("pl-PL", {
+              dateStyle: "short",
+              timeStyle: "short",
+            })}
+          </span>
+          <WatchlistButton eventId={event.id} />
+        </div>
       </div>
 
       {/* Teams */}
-      <h3 className="mb-4 text-base font-semibold text-white sm:text-lg">
-        {event.homeTeam}{" "}
-        <span className="text-white/42">vs</span>{" "}
+      <h3 className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-semibold text-white sm:text-lg">
+        <TeamFlag team={event.homeTeam} />
+        {event.homeTeam}
+        <span className="text-white/42">vs</span>
+        <TeamFlag team={event.awayTeam} />
         {event.awayTeam}
       </h3>
 
@@ -67,8 +74,8 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
                     }
                     className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-mono transition hover:opacity-80 active:scale-95 ${
                       idx === 0
-                        ? "border border-emerald-300/30 bg-emerald-300/16 text-emerald-50"
-                        : "border border-white/12 bg-black/20 text-white/74"
+                        ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        : "border border-white/12 bg-transparent text-white/70 hover:bg-white/5"
                     }`}
                   >
                     {BOOKMAKER_LOGOS[bm.bookmakerKey] || "📊"}{" "}

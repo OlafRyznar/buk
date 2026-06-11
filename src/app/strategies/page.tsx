@@ -2,94 +2,6 @@
 
 import { useState } from "react";
 
-// ── Middle Bet (Widełki) Calculator ───────────────────────────────────────────
-
-function MiddleCalculator() {
-  const [stake, setStake] = useState(1000);
-  const [oddsLow, setOddsLow] = useState(1.85);  // bet on -1.5 handicap low
-  const [oddsHigh, setOddsHigh] = useState(2.10); // bet on +1.5 handicap high
-  const [oddsMiddle, setOddsMiddle] = useState(0); // optional: exact score wins both
-
-  // Stakes for equal distribution:
-  const totalOddsInverse = 1 / oddsLow + 1 / oddsHigh;
-  const stakeLow = stake * (1 / oddsLow) / totalOddsInverse;
-  const stakeHigh = stake - stakeLow;
-
-  const midWin = oddsMiddle > 1 ? stakeLow * oddsLow + stakeHigh * oddsHigh : 0;
-
-  const lossIfOnlyLow = stakeHigh; // lose stake on high
-  const lossIfOnlyHigh = stakeLow; // lose stake on low
-  const maxLoss = Math.max(lossIfOnlyLow, lossIfOnlyHigh);
-  const middleProfit = midWin - stake;
-
-  return (
-    <div className="space-y-6">
-      <div className="glass-panel rounded-[28px] border border-amber-300/15 bg-amber-300/4 p-5">
-        <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-amber-300/15 text-amber-100">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <p className="text-sm leading-6 text-amber-100/80">
-            <strong className="text-amber-100">Uwaga: Strategia Middle / Widełki</strong> wiąże się
-            z ryzykiem straty. W przeciwieństwie do surebetu, za&quot;trafienie w środek&quot; jest niepewne –
-            możesz wygrać na obu zakładach, ale możesz też stracić jeden z nich. Używaj tej strategii
-            świadomie i z ograniczoną kwotą.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[
-          { label: 'Całkowity budżet (zł)', val: stake, set: setStake, step: 50, min: 10 },
-          { label: 'Kurs niższy (np. -1.5)', val: oddsLow, set: setOddsLow, step: 0.01, min: 1.01 },
-          { label: 'Kurs wyższy (np. +1.5)', val: oddsHigh, set: setOddsHigh, step: 0.01, min: 1.01 },
-        ].map(({ label, val, set, step, min }) => (
-          <div key={label}>
-            <label className="block text-xs text-white/42 mb-2">{label}</label>
-            <input
-              type="number"
-              value={val}
-              step={step}
-              min={min}
-              onChange={e => set(parseFloat(e.target.value) || min)}
-              className="w-full rounded-[16px] border border-white/12 bg-white/8 px-4 py-3 text-white font-mono focus:border-white/25 focus:outline-none"
-            />
-          </div>
-        ))}
-      </div>
-
-      <div>
-        <label className="block text-xs text-white/42 mb-2">Kurs jeśli wynik środkowy (opcja) – zostaw 0 jeśli nie dotyczy</label>
-        <input
-          type="number"
-          value={oddsMiddle}
-          step={0.01}
-          min={0}
-          onChange={e => setOddsMiddle(parseFloat(e.target.value) || 0)}
-          className="w-full sm:w-48 rounded-[16px] border border-white/12 bg-white/8 px-4 py-3 text-white font-mono focus:border-white/25 focus:outline-none"
-        />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Stawka na kurs niższy', value: `${stakeLow.toFixed(2)} zł`, sub: `@ ${oddsLow}`, color: 'text-sky-200' },
-          { label: 'Stawka na kurs wyższy', value: `${stakeHigh.toFixed(2)} zł`, sub: `@ ${oddsHigh}`, color: 'text-sky-200' },
-          { label: 'Maks. strata', value: `-${maxLoss.toFixed(2)} zł`, sub: 'Gdy przegrasz jeden zakład', color: 'text-rose-300' },
-          { label: 'Zysk przy "middle"', value: oddsMiddle > 1 ? `+${middleProfit.toFixed(2)} zł` : 'N/D', sub: 'Gdy wygrasz oba zakłady', color: 'text-emerald-300' },
-        ].map(({ label, value, sub, color }) => (
-          <div key={label} className="rounded-[22px] border border-white/10 bg-white/6 p-4">
-            <p className="text-xs text-white/40">{label}</p>
-            <p className={`mt-2 text-xl font-bold font-mono ${color}`}>{value}</p>
-            <p className="mt-1 text-xs text-white/36">{sub}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── ValueBet Calculator ────────────────────────────────────────────────────────
 
 function ValueBetCalculator() {
@@ -127,14 +39,13 @@ function ValueBetCalculator() {
         ))}
       </div>
 
-      <div className={`rounded-[24px] border p-5 ${isValue ? 'border-emerald-300/25 bg-emerald-300/6' : 'border-rose-300/25 bg-rose-300/6'}`}>
+      <div className={`rounded-xl border p-5 bg-transparent ${isValue ? 'border-emerald-500/25' : 'border-rose-500/25'}`}>
         <div className="flex items-center gap-3 mb-4">
-          <div className={`text-2xl`}>{isValue ? '✅' : '❌'}</div>
           <div>
-            <h3 className={`font-bold text-lg ${isValue ? 'text-emerald-200' : 'text-rose-200'}`}>
+            <h3 className={`font-bold text-base ${isValue ? 'text-emerald-300' : 'text-rose-300'}`}>
               {isValue ? 'Zakład ma wartość!' : 'Brak wartości (Value)'}
             </h3>
-            <p className="text-sm text-white/52">
+            <p className="text-xs text-white/50">
               {isValue
                 ? `Kurs bukmachera (${bookmakerOdds}) jest wyższy od kursu "fair" (${fairOdds.toFixed(2)})`
                 : `Bukmacher wycenia kurs "fair" na ${fairOdds.toFixed(2)} – Twój zakład jest przepłacony`}
@@ -258,7 +169,7 @@ function AsianHandicapCalculator() {
         </div>
       </div>
 
-      <div className={`rounded-[24px] border p-5 ${profit > 0 ? 'border-emerald-300/25 bg-emerald-300/6' : profit === 0 ? 'border-white/15 bg-white/6' : 'border-rose-300/25 bg-rose-300/6'}`}>
+      <div className={`rounded-xl border p-5 bg-transparent ${profit > 0 ? 'border-emerald-500/20' : profit === 0 ? 'border-white/10' : 'border-rose-500/20'}`}>
         <p className="text-sm text-white/52 mb-3">{description}</p>
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
@@ -298,7 +209,7 @@ function HedgeCalculator() {
 
   return (
     <div className="space-y-6">
-      <div className="glass-panel rounded-[28px] border border-sky-300/15 bg-sky-300/4 p-4">
+      <div className="rounded-xl border border-sky-500/20 bg-transparent p-4">
         <p className="text-sm text-sky-100/80">
           Kalkulator kontrowania – jeśli zdążyłeś postawić tylko pierwszy zakład, a kursy potem
           się zmieniły, użyj tego narzędzia, aby obliczyć stawkę zabezpieczającą i zminimalizować
@@ -332,7 +243,7 @@ function HedgeCalculator() {
           { label: 'Zysk jeśli wygra oryginał', value: `${profitIfOriginalWins >= 0 ? '+' : ''}${profitIfOriginalWins.toFixed(2)} zł`, color: profitIfOriginalWins >= 0 ? 'text-emerald-300' : 'text-rose-300' },
           { label: 'Zysk jeśli wygra kontr', value: `${profitIfHedgeWins >= 0 ? '+' : ''}${profitIfHedgeWins.toFixed(2)} zł`, color: profitIfHedgeWins >= 0 ? 'text-emerald-300' : 'text-rose-300' },
         ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-[22px] border border-white/10 bg-white/6 p-4">
+          <div key={label} className="rounded-xl border border-white/8 bg-transparent p-4">
             <p className="text-xs text-white/40">{label}</p>
             <p className={`text-xl font-bold font-mono mt-2 ${color}`}>{value}</p>
           </div>
@@ -344,13 +255,12 @@ function HedgeCalculator() {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-type Tab = 'middle' | 'valuebet' | 'asian' | 'hedge';
+type Tab = 'valuebet' | 'asian' | 'hedge';
 
-const TABS: { id: Tab; label: string; icon: string; desc: string }[] = [
-  { id: 'middle', label: 'Widełki (Middle)', icon: '⚖️', desc: 'Zysk gdy dwie linie handicapu obie wygrywają' },
-  { id: 'valuebet', label: 'ValueBet', icon: '📊', desc: 'Znajdź zakłady z dodatnią wartością oczekiwaną' },
-  { id: 'asian', label: 'Handicap Azjatycki', icon: '🀄', desc: 'Oblicz wypłaty dla handicapów ćwiartkowych' },
-  { id: 'hedge', label: 'Kalkulator Kontrowania', icon: '🛡️', desc: 'Zabezpiecz pierwszą stronę zakładu w trybie ratunkowym' },
+const TABS: { id: Tab; label: string; desc: string }[] = [
+  { id: 'valuebet', label: 'ValueBet', desc: 'Znajdź zakłady z dodatnią wartością oczekiwaną' },
+  { id: 'asian', label: 'Handicap Azjatycki', desc: 'Oblicz wypłaty dla handicapów ćwiartkowych' },
+  { id: 'hedge', label: 'Kalkulator Kontrowania', desc: 'Zabezpiecz pierwszą stronę zakładu w trybie ratunkowym' },
 ];
 
 const STRATEGY_GUIDES: Record<
@@ -362,26 +272,13 @@ const STRATEGY_GUIDES: Record<
     steps: string[];
   }
 > = {
-  middle: {
-    intro:
-      'Widełki to strategia, w której grasz dwa różne handicapy i liczysz na wynik mieszczący się pomiędzy nimi.',
-    when:
-      'Użyj, gdy widzisz duże przesunięcia linii lub różne interpretacje meczu u bukmacherów.',
-    risk:
-      'To nie jest pewny zysk. Możesz wygrać dużo, ale możesz też stracić część stawki.',
-    steps: [
-      'Wpisz budżet oraz oba kursy.',
-      'Sprawdź podział stawek i maksymalną stratę.',
-      'Podejmij decyzję tylko jeśli ryzyko jest akceptowalne.',
-    ],
-  },
   valuebet: {
     intro:
       'ValueBet to zakład, gdzie Twój szacunek prawdopodobieństwa jest wyższy niż wycena bukmachera.',
     when:
       'Użyj, gdy masz własny model, statystyki lub przewagę informacyjną dla danego rynku.',
     risk:
-      'Nawet dobry valuebet może przegrać krótkoterminowo. Liczy się seria i dyscyplina.',
+      'Nawet zakład z dodatnim EV może przegrać – wynik pojedynczego kuponu nie potwierdza ani nie obala przewagi.',
     steps: [
       'Podaj kurs bukmachera i swoje prawdopodobieństwo.',
       'Sprawdź EV i przewagę procentową.',
@@ -417,53 +314,55 @@ const STRATEGY_GUIDES: Record<
 };
 
 export default function StrategiesPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('middle');
+  const [activeTab, setActiveTab] = useState<Tab>('valuebet');
   const activeConfig = TABS.find((tab) => tab.id === activeTab);
   const guide = STRATEGY_GUIDES[activeTab];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="w-full space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white sm:text-3xl">Zaawansowane Strategie</h1>
-        <p className="mt-1 text-white/52">Kalkulatory dla middle-betów, value-betów, handicapów azjatyckich i kontrowania.</p>
+        <p className="mt-1 text-white/52">Kalkulatory dla value-betów, handicapów azjatyckich i kontrowania.</p>
       </div>
 
       {/* Tab selector */}
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="flex gap-6 border-b border-white/10 pb-px overflow-x-auto">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`rounded-lg border p-3 text-left transition ${
+            className={`shrink-0 pb-3 text-sm font-medium transition-all relative ${
               activeTab === tab.id
-                ? 'border-sky-400/35 bg-sky-400/14'
-                : 'border-white/12 bg-white/5 hover:bg-white/8'
+                ? 'text-sky-400 font-semibold'
+                : 'text-white/60 hover:text-white'
             }`}
           >
-            <p className="mb-1 text-base">{tab.icon}</p>
-            <p className={`text-sm font-semibold ${activeTab === tab.id ? 'text-sky-100' : 'text-white'}`}>{tab.label}</p>
+            {tab.label}
+            {activeTab === tab.id && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-400 rounded-full" />
+            )}
           </button>
         ))}
       </div>
 
-      <div className="glass-panel rounded-xl border border-white/12 p-4 sm:p-5">
-        <h2 className="text-lg font-semibold text-white">
-          {activeConfig?.icon} {activeConfig?.label}
+      <div className="glass-panel rounded-xl p-4 sm:p-5">
+        <h2 className="text-base font-bold text-white">
+          {activeConfig?.label}
         </h2>
-        <p className="mt-2 text-sm text-white/72">{guide.intro}</p>
+        <p className="mt-1.5 text-xs text-white/50">{guide.intro}</p>
 
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-lg border border-white/12 bg-white/6 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Kiedy użyć</p>
-            <p className="mt-2 text-sm text-white/74">{guide.when}</p>
+          <div className="rounded-xl border border-white/8 bg-transparent p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Kiedy użyć</p>
+            <p className="mt-1.5 text-xs text-white/60 leading-5">{guide.when}</p>
           </div>
-          <div className="rounded-lg border border-white/12 bg-white/6 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Na co uważać</p>
-            <p className="mt-2 text-sm text-white/74">{guide.risk}</p>
+          <div className="rounded-xl border border-white/8 bg-transparent p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Na co uważać</p>
+            <p className="mt-1.5 text-xs text-white/60 leading-5">{guide.risk}</p>
           </div>
-          <div className="rounded-lg border border-white/12 bg-white/6 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Szybkie kroki</p>
-            <ol className="mt-2 space-y-1 text-sm text-white/74">
+          <div className="rounded-xl border border-white/8 bg-transparent p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Szybkie kroki</p>
+            <ol className="mt-1.5 space-y-1 text-xs text-white/60 leading-5">
               {guide.steps.map((step, index) => (
                 <li key={step}>
                   {index + 1}. {step}
@@ -475,26 +374,24 @@ export default function StrategiesPage() {
       </div>
 
       {/* Active calculator */}
-      <div className="glass-panel rounded-[28px] p-4 sm:p-6">
-        <h2 className="text-xl font-semibold text-white mb-2">
+      <div className="glass-panel rounded-xl p-4 sm:p-6">
+        <h2 className="text-lg font-bold text-white mb-1">
           Kalkulator: {activeConfig?.label}
         </h2>
-        <p className="mb-6 text-sm text-white/58">{activeConfig?.desc}</p>
-        {activeTab === 'middle' && <MiddleCalculator />}
+        <p className="mb-6 text-xs text-white/40">{activeConfig?.desc}</p>
         {activeTab === 'valuebet' && <ValueBetCalculator />}
         {activeTab === 'asian' && <AsianHandicapCalculator />}
         {activeTab === 'hedge' && <HedgeCalculator />}
       </div>
 
       {/* Educational note */}
-      <div className="glass-panel rounded-[24px] p-5 border border-white/8">
-        <h3 className="font-semibold text-white mb-3">📖 Wskazówki do zaawansowanych strategii</h3>
-        <ul className="space-y-2 text-sm text-white/60 list-disc list-inside">
-          <li>Middle betting wymaga cierpliwości i śledzenia ruchów na liniach handicapów.</li>
+      <div className="glass-panel rounded-xl p-5 border border-white/8">
+        <h3 className="font-semibold text-white mb-3 text-sm">Wskazówki do zaawansowanych strategii</h3>
+        <ul className="space-y-2 text-xs text-white/50 list-disc list-inside">
           <li>ValueBet wymaga dokładnej oceny prawdopodobieństwa – modele statystyczne pomagają.</li>
           <li>Handicapy azjatyckie minimalizują ryzyko dzięki częściowym zwrotom stawki.</li>
           <li>Kalkulator kontrowania jest przydatny gdy rynek zostaje zamknięty przez bukmachera.</li>
-          <li>W trudnych sytuacjach zachowaj spokój – sprawdź alternatywnych bukmacherów przed kontrą.</li>
+          <li>Przed kontrą porównaj kursy u kilku bukmacherów – stawka zabezpieczająca może wypaść korzystniej niż u tego samego bukmachera.</li>
         </ul>
       </div>
     </div>

@@ -33,10 +33,10 @@ function BookmakerFilterTab() {
               <button
                 key={bm.key}
                 onClick={() => toggle(bm.key)}
-                className={`flex items-center justify-between rounded-[22px] border p-4 text-left transition ${
+                className={`flex items-center justify-between rounded-xl border p-4 text-left transition ${
                   selected
-                    ? 'border-emerald-300/25 bg-emerald-300/8 shadow-[0_0_20px_rgba(110,231,183,0.06)]'
-                    : 'border-white/10 bg-white/5 hover:bg-white/8'
+                    ? 'border-emerald-500/30 bg-transparent'
+                    : 'border-white/10 bg-transparent hover:bg-white/5'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -79,7 +79,7 @@ function NotificationsTab() {
       <h3 className="font-semibold text-white">Ustawienia Powiadomień</h3>
 
       {/* Master toggle */}
-      <div className="flex flex-col gap-3 rounded-[22px] border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-white/8 bg-transparent p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-medium text-white">Powiadomienia push</p>
           <p className="text-sm text-white/50 mt-0.5">Włącz/wyłącz wszystkie alerty o surebetach</p>
@@ -89,12 +89,12 @@ function NotificationsTab() {
           className={`relative h-7 w-13 rounded-full transition-colors ${settings.notificationsEnabled ? 'bg-emerald-500' : 'bg-white/20'}`}
           style={{ width: 52 }}
         >
-          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.notificationsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+          <span className={`absolute top-1 left-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${settings.notificationsEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
         </button>
       </div>
 
       {/* Min profit alert */}
-      <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 space-y-3">
+      <div className="rounded-xl border border-white/8 bg-transparent p-4 space-y-3">
         <div>
           <p className="font-medium text-white">Minimalny zysk do alertu</p>
           <p className="text-sm text-white/50 mt-0.5">Otrzymuj alert tylko gdy zysk przekroczy tę wartość</p>
@@ -107,7 +107,8 @@ function NotificationsTab() {
             step={0.1}
             value={settings.minProfitForAlert}
             onChange={e => updateSettings({ minProfitForAlert: parseFloat(e.target.value) })}
-            className="flex-1 accent-emerald-500"
+            className="w-full flex-1 accent-emerald-500"
+            style={{ '--slider-color': '#10b981', '--slider-color-alpha': 'rgba(16, 185, 129, 0.2)' } as React.CSSProperties}
           />
           <span className="w-16 text-right font-mono font-bold text-emerald-300">
             {settings.minProfitForAlert.toFixed(1)}%
@@ -116,7 +117,7 @@ function NotificationsTab() {
       </div>
 
       {/* Pre-surebet threshold */}
-      <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 space-y-3">
+      <div className="rounded-xl border border-white/8 bg-transparent p-4 space-y-3">
         <div>
           <p className="font-medium text-white">Próg pre-surebetu</p>
           <p className="text-sm text-white/50 mt-0.5">
@@ -131,7 +132,8 @@ function NotificationsTab() {
             step={0.5}
             value={settings.preSurebetThreshold}
             onChange={e => updateSettings({ preSurebetThreshold: parseFloat(e.target.value) })}
-            className="flex-1 accent-sky-500"
+            className="w-full flex-1 accent-sky-500"
+            style={{ '--slider-color': '#0ea5e9', '--slider-color-alpha': 'rgba(14, 165, 233, 0.2)' } as React.CSSProperties}
           />
           <span className="w-16 text-right font-mono font-bold text-sky-300">
             {settings.preSurebetThreshold.toFixed(1)}%
@@ -140,7 +142,7 @@ function NotificationsTab() {
       </div>
 
       {/* Tax rate */}
-      <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 space-y-3">
+      <div className="rounded-xl border border-white/8 bg-transparent p-4 space-y-3">
         <div>
           <p className="font-medium text-white">Stawka podatkowa (kursy netto)</p>
           <p className="text-sm text-white/50 mt-0.5">
@@ -155,7 +157,8 @@ function NotificationsTab() {
             step={1}
             value={settings.taxRate}
             onChange={e => updateSettings({ taxRate: parseFloat(e.target.value) })}
-            className="flex-1 accent-amber-500"
+            className="w-full flex-1 accent-amber-500"
+            style={{ '--slider-color': '#f59e0b', '--slider-color-alpha': 'rgba(245, 158, 11, 0.2)' } as React.CSSProperties}
           />
           <span className="w-16 text-right font-mono font-bold text-amber-300">
             {settings.taxRate.toFixed(0)}%
@@ -198,7 +201,7 @@ function BalancesTab() {
 
       <div className="space-y-3">
         {displayedBalances.map(bm => (
-          <div key={bm.bookmakerKey} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+          <div key={bm.bookmakerKey} className="rounded-xl border border-white/8 bg-transparent p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="h-10 w-10 rounded-xl bg-white/8 flex items-center justify-center text-sm font-bold text-white/60 shrink-0">
               {bm.bookmakerName.charAt(0)}
@@ -282,7 +285,7 @@ function SafetyTab() {
           toggle: () => updateSettings({ mainMarketsOnly: !settings.mainMarketsOnly }),
         },
       ].map(({ key, label, desc, val, toggle }) => (
-        <div key={key} className="flex flex-col gap-3 rounded-[22px] border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div key={key} className="flex flex-col gap-3 rounded-xl border border-white/8 bg-transparent p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-medium text-white">{label}</p>
             <p className="text-sm text-white/50 mt-0.5">{desc}</p>
@@ -292,13 +295,13 @@ function SafetyTab() {
             className={`relative h-7 rounded-full transition-colors shrink-0`}
             style={{ width: 52, backgroundColor: val ? '#10b981' : 'rgba(255,255,255,0.15)' }}
           >
-            <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${val ? 'translate-x-6' : 'translate-x-1'}`} />
+            <span className={`absolute top-1 left-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${val ? 'translate-x-6' : 'translate-x-0'}`} />
           </button>
         </div>
       ))}
 
       {settings.roundingEnabled && (
-        <div className="rounded-[22px] border border-white/10 bg-white/5 p-4 space-y-3">
+        <div className="rounded-xl border border-white/8 bg-transparent p-4 space-y-3">
           <p className="font-medium text-white text-sm">Krok zaokrąglenia stawki</p>
           <div className="flex items-center gap-4">
             <input
@@ -308,7 +311,8 @@ function SafetyTab() {
               step={1}
               value={settings.roundingStep}
               onChange={e => updateSettings({ roundingStep: parseInt(e.target.value) })}
-              className="flex-1 accent-amber-500"
+              className="w-full flex-1 accent-amber-500"
+              style={{ '--slider-color': '#f59e0b', '--slider-color-alpha': 'rgba(245, 158, 11, 0.2)' } as React.CSSProperties}
             />
             <span className="w-20 text-right font-mono font-bold text-amber-300">
               {settings.roundingStep} zł
@@ -332,26 +336,25 @@ function SubscriptionTab() {
 
       {!settings.isPremium ? (
         <div className="space-y-4">
-          <div className="glass-panel rounded-[28px] border border-amber-300/20 bg-amber-300/5 p-6">
-            <div className="text-center space-y-3 mb-6">
-              <p className="text-4xl">🚀</p>
-              <h4 className="text-xl font-bold text-white">Odblokuj BukScan Premium</h4>
-              <p className="text-white/60">
-                Dostęp do surebetów bez opóźnień, alertów push w czasie rzeczywistym i więcej.
+          <div className="rounded-xl border border-white/8 bg-transparent p-6">
+            <div className="text-center space-y-2 mb-6">
+              <h4 className="text-xl font-bold text-white">BukScan Premium</h4>
+              <p className="text-white/60 text-sm max-w-md mx-auto">
+                Dostęp do surebetów bez opóźnień, alertów push w czasie rzeczywistym i zaawansowanych modułów.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 mb-6">
+            <div className="grid gap-3 sm:grid-cols-2 mb-6 max-w-xl mx-auto">
               {[
-                '⚡ Alerty o surebetach w &lt;10 sekund',
-                '📊 Kursy live bez opóźnień',
-                '🔔 Powiadomienia push',
-                '📱 Aplikacja mobilna',
-                '🚫 Brak reklam',
-                '💬 Priorytetowe wsparcie',
+                'Alerty o surebetach w < 10 sekund',
+                'Kursy live bez opóźnień',
+                'Powiadomienia push',
+                'Aplikacja mobilna',
+                'Brak reklam',
+                'Priorytetowe wsparcie',
               ].map(f => (
                 <div key={f} className="flex items-center gap-2 text-sm text-white/70">
-                  <span className="w-5 shrink-0 text-center" dangerouslySetInnerHTML={{ __html: f.split(' ')[0] }} />
-                  <span dangerouslySetInnerHTML={{ __html: f.substring(f.indexOf(' ') + 1) }} />
+                  <span className="text-emerald-400 font-semibold">✓</span>
+                  <span>{f}</span>
                 </div>
               ))}
             </div>
@@ -364,15 +367,15 @@ function SubscriptionTab() {
                 <button
                   key={plan.period}
                   onClick={() => updateSettings({ isPremium: true })}
-                  className="relative rounded-[22px] border border-sky-300/25 bg-sky-300/8 p-4 text-center hover:bg-sky-300/14 transition"
+                  className="relative rounded-xl border border-white/10 bg-transparent p-4 text-center hover:bg-white/5 transition"
                 >
                   {plan.badge && (
-                    <span className="absolute -top-2 right-2 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white">
+                    <span className="absolute -top-2 right-2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-semibold text-white">
                       {plan.badge}
                     </span>
                   )}
-                  <p className="font-semibold text-white">{plan.period}</p>
-                  <p className="text-sky-200 font-mono mt-1">{plan.price}</p>
+                  <p className="font-semibold text-white text-sm">{plan.period}</p>
+                  <p className="text-sky-300 font-mono mt-1 text-sm">{plan.price}</p>
                   <p className="text-xs text-white/40 mt-2">Aktywuj teraz</p>
                 </button>
               ))}
@@ -384,37 +387,37 @@ function SubscriptionTab() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="glass-panel rounded-[28px] border border-emerald-300/20 bg-emerald-300/6 p-6">
+          <div className="rounded-xl border border-emerald-500/20 bg-transparent p-6">
             <div className="flex items-center gap-4 mb-4">
-              <div className="h-14 w-14 rounded-2xl bg-emerald-400/20 flex items-center justify-center text-2xl">
-                ✨
+              <div className="h-10 w-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
+                ✓
               </div>
               <div>
-                <h4 className="text-xl font-bold text-emerald-200">Jesteś Premium!</h4>
-                <p className="text-sm text-white/60">Wszystkie funkcje odblokowane</p>
+                <h4 className="text-lg font-bold text-emerald-300">Jesteś Premium!</h4>
+                <p className="text-xs text-white/60">Wszystkie funkcje odblokowane</p>
               </div>
             </div>
-            <div className="rounded-[18px] border border-white/10 bg-white/5 p-4">
+            <div className="rounded-xl border border-white/8 bg-transparent p-4">
               <p className="text-sm text-white/50">Ważność do: <span className="font-semibold text-white">31 marca 2027</span></p>
               <p className="text-sm text-white/50 mt-1">Plan: <span className="font-semibold text-white">Roczny</span></p>
             </div>
             <button
               onClick={() => updateSettings({ isPremium: false })}
-              className="mt-4 text-sm text-rose-400/60 hover:text-rose-400 transition"
+              className="mt-4 text-xs text-rose-400/60 hover:text-rose-400 transition"
             >
               Anuluj automatyczne odnawianie
             </button>
           </div>
 
           {/* Virtual balance reset */}
-          <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-            <p className="font-medium text-white mb-1">Wirtualne saldo (demo)</p>
-            <p className="text-sm text-white/50 mb-3">
+          <div className="rounded-xl border border-white/8 bg-transparent p-4">
+            <p className="font-medium text-white mb-1 text-sm">Wirtualne saldo (demo)</p>
+            <p className="text-xs text-white/50 mb-3">
               Aktualne saldo: <span className="font-mono font-bold text-emerald-300">{settings.virtualBalance.toLocaleString('pl-PL')} zł</span>
             </p>
             <button
               onClick={() => updateSettings({ virtualBalance: 10000 })}
-              className="rounded-2xl bg-white/8 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/12 transition"
+              className="rounded-xl bg-white/[0.06] px-4 py-2 text-xs text-white/70 hover:text-white hover:bg-white/[0.1] transition"
             >
               Resetuj saldo do 10 000 zł
             </button>
@@ -425,42 +428,44 @@ function SubscriptionTab() {
   );
 }
 
-const TABS_CONFIG: { id: SettingsTab; label: string; icon: string }[] = [
-  { id: 'bookmakers', label: 'Moi Bukmacherzy', icon: '🏦' },
-  { id: 'notifications', label: 'Powiadomienia', icon: '🔔' },
-  { id: 'balances', label: 'Salda', icon: '💰' },
-  { id: 'safety', label: 'Bezpieczeństwo', icon: '🛡️' },
-  { id: 'subscription', label: 'Subskrypcja', icon: '⭐' },
+const TABS_CONFIG: { id: SettingsTab; label: string }[] = [
+  { id: 'bookmakers', label: 'Moi Bukmacherzy' },
+  { id: 'notifications', label: 'Powiadomienia' },
+  { id: 'balances', label: 'Salda' },
+  { id: 'safety', label: 'Bezpieczeństwo' },
+  { id: 'subscription', label: 'Subskrypcja' },
 ];
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('bookmakers');
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="w-full space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white sm:text-3xl">Ustawienia</h1>
         <p className="mt-1 text-white/52">Spersonalizuj swoje doświadczenie z BukScan.</p>
       </div>
 
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+      <div className="flex gap-6 border-b border-white/10 pb-px overflow-x-auto">
         {TABS_CONFIG.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium transition ${
+            className={`shrink-0 pb-3 text-sm font-medium transition-all relative ${
               activeTab === tab.id
-                ? 'bg-sky-400/20 text-sky-100 border border-sky-300/25'
-                : 'border border-white/12 bg-white/6 text-white/60 hover:text-white hover:bg-white/10'
+                ? 'text-sky-400 font-semibold'
+                : 'text-white/60 hover:text-white'
             }`}
           >
-            <span>{tab.icon}</span>
             {tab.label}
+            {activeTab === tab.id && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-400 rounded-full" />
+            )}
           </button>
         ))}
       </div>
 
-      <div className="glass-panel rounded-[28px] p-4 sm:p-6">
+      <div className="glass-panel rounded-2xl p-4 sm:p-6">
         {activeTab === 'bookmakers' && <BookmakerFilterTab />}
         {activeTab === 'notifications' && <NotificationsTab />}
         {activeTab === 'balances' && <BalancesTab />}

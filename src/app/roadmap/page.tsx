@@ -101,7 +101,7 @@ export default function RoadmapPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="w-full space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white sm:text-3xl">Plan Rozwoju</h1>
         <p className="mt-1 text-white/64">
@@ -141,7 +141,7 @@ export default function RoadmapPage() {
             { name: "Redis", desc: "Cache (plan)" },
             { name: "NextAuth.js", desc: "Autentykacja (plan)" },
           ].map((tech) => (
-            <div key={tech.name} className="rounded-xl border border-white/12 bg-white/7 p-3">
+            <div key={tech.name} className="rounded-xl border border-white/8 bg-transparent p-3">
               <p className="text-white font-medium text-sm">{tech.name}</p>
               <p className="text-white/55 text-xs">{tech.desc}</p>
             </div>
@@ -208,17 +208,17 @@ export default function RoadmapPage() {
       <div className="glass-panel rounded-3xl p-4 sm:p-6">
         <h2 className="text-lg font-bold text-white mb-4">Cele biznesowe</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-2xl border border-white/12 bg-white/7 p-4 text-center">
+          <div className="rounded-xl border border-white/8 bg-transparent p-4 text-center">
             <p className="text-2xl font-bold text-emerald-400 sm:text-3xl">20+</p>
             <p className="text-sm text-white/72 mt-1">Bukmacherów</p>
             <p className="text-xs text-white/52">do monitorowania</p>
           </div>
-          <div className="rounded-2xl border border-white/12 bg-white/7 p-4 text-center">
+          <div className="rounded-xl border border-white/8 bg-transparent p-4 text-center">
             <p className="text-2xl font-bold text-blue-400 sm:text-3xl">&lt;30s</p>
             <p className="text-sm text-white/72 mt-1">Opóźnienie danych</p>
             <p className="text-xs text-white/52">cel na Fazę 2</p>
           </div>
-          <div className="rounded-2xl border border-white/12 bg-white/7 p-4 text-center">
+          <div className="rounded-xl border border-white/8 bg-transparent p-4 text-center">
             <p className="text-2xl font-bold text-amber-400 sm:text-3xl">15+</p>
             <p className="text-sm text-white/72 mt-1">Sportów</p>
             <p className="text-xs text-white/52">piłka nożna, koszykówka, tenis...</p>

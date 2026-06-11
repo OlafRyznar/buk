@@ -29,6 +29,8 @@ interface AppContextValue {
   unreadCount: number;
   deductVirtualBalance: (amount: number) => void;
   addVirtualBalance: (amount: number) => void;
+  watchlist: string[];
+  toggleWatchlist: (eventId: string) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -60,13 +62,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [bookmakerBalances, setBookmakerBalances] = useState<BookmakerBalance[]>([]);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [watchlist, setWatchlist] = useState<string[]>([]);
 
   // Initialize from storage once — runs only on the client, after hydration
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSettings(loadFromStorage("bukscan:settings", DEFAULT_SETTINGS));
     setBookmakerBalances(loadFromStorage("bukscan:balances", DEFAULT_BALANCES));
     setJournal(loadFromStorage("bukscan:journal", DEMO_JOURNAL_ENTRIES));
     setNotifications(loadFromStorage("bukscan:notifications", DEMO_NOTIFICATIONS));
+    setWatchlist(loadFromStorage("bukscan:watchlist", []));
     setIsLoaded(true);
   }, []);
 
@@ -75,6 +80,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (isLoaded) saveToStorage("bukscan:balances", bookmakerBalances); }, [bookmakerBalances, isLoaded]);
   useEffect(() => { if (isLoaded) saveToStorage("bukscan:journal", journal); }, [journal, isLoaded]);
   useEffect(() => { if (isLoaded) saveToStorage("bukscan:notifications", notifications); }, [notifications, isLoaded]);
+  useEffect(() => { if (isLoaded) saveToStorage("bukscan:watchlist", watchlist); }, [watchlist, isLoaded]);
 
   const updateSettings = useCallback((partial: Partial<UserSettings>) => {
     setSettings(prev => ({ ...prev, ...partial }));
@@ -132,6 +138,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSettings(prev => ({ ...prev, virtualBalance: prev.virtualBalance + amount }));
   }, []);
 
+  const toggleWatchlist = useCallback((eventId: string) => {
+    setWatchlist(prev =>
+      prev.includes(eventId) ? prev.filter(id => id !== eventId) : [...prev, eventId]
+    );
+  }, []);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -152,6 +164,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       unreadCount,
       deductVirtualBalance,
       addVirtualBalance,
+      watchlist,
+      toggleWatchlist,
     }}>
       {children}
     </AppContext.Provider>

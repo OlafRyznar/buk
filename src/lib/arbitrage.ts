@@ -4,8 +4,14 @@ import {
   ArbitrageBet,
   NearArbitrageOpportunity,
 } from './types';
+import { DEFAULT_SETTINGS, TAX_FREE_BOOKMAKER_KEYS } from './store-types';
 
 const DEFAULT_NEAR_ARBITRAGE_THRESHOLD = 0.04;
+
+// Default tax rate (%) applied to net winnings, and the set of bookmakers
+// whose tax-free game mode means odds shouldn't be discounted.
+export const DEFAULT_TAX_RATE = DEFAULT_SETTINGS.taxRate;
+export const DEFAULT_TAX_FREE_KEYS = new Set(TAX_FREE_BOOKMAKER_KEYS);
 
 /**
  * Calculate arbitrage opportunity for a given event and market.
@@ -17,7 +23,9 @@ const DEFAULT_NEAR_ARBITRAGE_THRESHOLD = 0.04;
  */
 export function findArbitrageForEvent(
   event: EventWithOdds,
-  totalStake: number = 1000
+  totalStake: number = 1000,
+  taxRate: number = DEFAULT_TAX_RATE,
+  taxFreeKeys: Set<string> = DEFAULT_TAX_FREE_KEYS
 ): ArbitrageOpportunity[] {
   const opportunities: ArbitrageOpportunity[] = [];
 
@@ -35,40 +43,33 @@ export function findArbitrageForEvent(
       outcome: o.name,
     }));
 
-    // Calculate total implied probability
-    const totalImpliedProbability = bestOdds.reduce(
-      (sum, o) => sum + 1 / o.odds,
-      0
-    );
+    // Arbitrage exists if the sum of inverse *net* (after-tax) odds < 1
+    const netOdds = bestOdds.map((o) => effectiveOdds(o.odds, o.bookmakerKey, taxRate, taxFreeKeys));
+    const totalImpliedProbability = netOdds.reduce((sum, o) => sum + 1 / o, 0);
 
-    // Arbitrage exists if total implied probability < 1
     if (totalImpliedProbability < 1) {
-      const profit = (1 / totalImpliedProbability - 1) * 100;
+      // bets[].odds stays gross (what you enter at the bookmaker); stakes,
+      // returns and profit are computed from net (after-tax) odds.
+      const grossBets: ArbitrageBet[] = bestOdds.map((o) => ({
+        outcome: o.outcome,
+        bookmaker: o.bookmaker,
+        bookmakerKey: o.bookmakerKey,
+        odds: o.odds,
+        stake: 0,
+        potentialReturn: 0,
+      }));
 
-      // Calculate optimal stakes for each outcome
-      const bets: ArbitrageBet[] = bestOdds.map((o) => {
-        const stake = totalStake * (1 / o.odds / totalImpliedProbability);
-        return {
-          outcome: o.outcome,
-          bookmaker: o.bookmaker,
-          bookmakerKey: o.bookmakerKey,
-          odds: o.odds,
-          stake: Math.round(stake * 100) / 100,
-          potentialReturn: Math.round(stake * o.odds * 100) / 100,
-        };
-      });
-
-      const guaranteedReturn = bets[0].potentialReturn;
+      const recomputed = recomputeStakesWithTax(grossBets, totalStake, taxRate, taxFreeKeys);
 
       opportunities.push({
         id: `${event.id}-${market.marketKey}`,
         event,
         marketKey: market.marketKey,
-        profit: Math.round(profit * 100) / 100,
-        totalImpliedProbability: Math.round(totalImpliedProbability * 10000) / 10000,
-        bets,
+        profit: recomputed.profit,
+        totalImpliedProbability: recomputed.totalImpliedProbability,
+        bets: recomputed.bets,
         stake: totalStake,
-        guaranteedReturn: Math.round(guaranteedReturn * 100) / 100,
+        guaranteedReturn: recomputed.guaranteedReturn,
       });
     }
   }
@@ -81,12 +82,14 @@ export function findArbitrageForEvent(
  */
 export function findAllArbitrages(
   events: EventWithOdds[],
-  totalStake: number = 1000
+  totalStake: number = 1000,
+  taxRate: number = DEFAULT_TAX_RATE,
+  taxFreeKeys: Set<string> = DEFAULT_TAX_FREE_KEYS
 ): ArbitrageOpportunity[] {
   const allOpportunities: ArbitrageOpportunity[] = [];
 
   for (const event of events) {
-    const opportunities = findArbitrageForEvent(event, totalStake);
+    const opportunities = findArbitrageForEvent(event, totalStake, taxRate, taxFreeKeys);
     allOpportunities.push(...opportunities);
   }
 
@@ -96,7 +99,9 @@ export function findAllArbitrages(
 
 export function findNearArbitrageForEvent(
   event: EventWithOdds,
-  threshold: number = DEFAULT_NEAR_ARBITRAGE_THRESHOLD
+  threshold: number = DEFAULT_NEAR_ARBITRAGE_THRESHOLD,
+  taxRate: number = DEFAULT_TAX_RATE,
+  taxFreeKeys: Set<string> = DEFAULT_TAX_FREE_KEYS
 ): NearArbitrageOpportunity[] {
   const opportunities: NearArbitrageOpportunity[] = [];
 
@@ -106,6 +111,8 @@ export function findNearArbitrageForEvent(
       continue;
     }
 
+    // outcomes[].odds stays gross; the threshold/adjustment search below
+    // works in net (after-tax) odds space so the radar reflects real profit.
     const bestOdds = outcomes.map((outcome) => ({
       outcome: outcome.name,
       bookmaker: outcome.bestOdds.bookmaker,
@@ -113,7 +120,8 @@ export function findNearArbitrageForEvent(
       odds: outcome.bestOdds.odds,
     }));
 
-    const totalImpliedProbability = bestOdds.reduce((sum, outcome) => sum + 1 / outcome.odds, 0);
+    const netOdds = bestOdds.map((o) => effectiveOdds(o.odds, o.bookmakerKey, taxRate, taxFreeKeys));
+    const totalImpliedProbability = netOdds.reduce((sum, o) => sum + 1 / o, 0);
 
     if (totalImpliedProbability < 1 || totalImpliedProbability > 1 + threshold) {
       continue;
@@ -130,15 +138,17 @@ export function findNearArbitrageForEvent(
         }
       | null = null;
 
-    for (const outcome of bestOdds) {
-      const inverseOdds = 1 / outcome.odds;
+    for (let i = 0; i < bestOdds.length; i++) {
+      const outcome = bestOdds[i];
+      const inverseOdds = 1 / netOdds[i];
       const remainingImpliedProbability = totalImpliedProbability - inverseOdds;
 
       if (remainingImpliedProbability >= 1) {
         continue;
       }
 
-      const targetOdds = 1 / (1 - remainingImpliedProbability);
+      const targetNetOdds = 1 / (1 - remainingImpliedProbability);
+      const targetOdds = grossOddsForNet(targetNetOdds, outcome.bookmakerKey, taxRate, taxFreeKeys);
       const requiredOddsChangePercent = ((targetOdds - outcome.odds) / outcome.odds) * 100;
 
       if (requiredOddsChangePercent <= 0) {
@@ -183,12 +193,14 @@ export function findNearArbitrageForEvent(
 
 export function findAllNearArbitrages(
   events: EventWithOdds[],
-  threshold: number = DEFAULT_NEAR_ARBITRAGE_THRESHOLD
+  threshold: number = DEFAULT_NEAR_ARBITRAGE_THRESHOLD,
+  taxRate: number = DEFAULT_TAX_RATE,
+  taxFreeKeys: Set<string> = DEFAULT_TAX_FREE_KEYS
 ): NearArbitrageOpportunity[] {
   const nearArbitrages: NearArbitrageOpportunity[] = [];
 
   for (const event of events) {
-    nearArbitrages.push(...findNearArbitrageForEvent(event, threshold));
+    nearArbitrages.push(...findNearArbitrageForEvent(event, threshold, taxRate, taxFreeKeys));
   }
 
   return nearArbitrages.sort((left, right) => {
@@ -283,5 +295,77 @@ export function netOddsAfterTax(odds: number, taxRate: number): number {
   if (odds <= 1) return odds;
   const netProfit = (odds - 1) * (1 - taxRate / 100);
   return Math.round((1 + netProfit) * 10000) / 10000;
+}
+
+function isTaxFreeBookmaker(bookmakerKey: string, taxFreeKeys: Set<string>): boolean {
+  const normalizedKey = bookmakerKey?.toLowerCase().replace(/\s+/g, "") ?? "";
+  return taxFreeKeys.has(normalizedKey);
+}
+
+/**
+ * Decimal odds after tax for a specific bookmaker — bookmakers with a
+ * tax-free game mode (e.g. Betclic) keep their gross odds, others get
+ * `netOddsAfterTax`.
+ */
+export function effectiveOdds(
+  odds: number,
+  bookmakerKey: string,
+  taxRate: number = DEFAULT_TAX_RATE,
+  taxFreeKeys: Set<string> = DEFAULT_TAX_FREE_KEYS
+): number {
+  if (isTaxFreeBookmaker(bookmakerKey, taxFreeKeys)) return odds;
+  return netOddsAfterTax(odds, taxRate);
+}
+
+/**
+ * Inverse of `effectiveOdds` — given a target net (after-tax) decimal odds,
+ * returns the gross odds a bookmaker would need to display.
+ */
+export function grossOddsForNet(
+  netOdds: number,
+  bookmakerKey: string,
+  taxRate: number = DEFAULT_TAX_RATE,
+  taxFreeKeys: Set<string> = DEFAULT_TAX_FREE_KEYS
+): number {
+  if (isTaxFreeBookmaker(bookmakerKey, taxFreeKeys) || netOdds <= 1) return netOdds;
+  const grossProfit = (netOdds - 1) / (1 - taxRate / 100);
+  return Math.round((1 + grossProfit) * 10000) / 10000;
+}
+
+/**
+ * Recompute stakes, returns and profit for a set of bets after tax.
+ * `bets[].odds` is treated as gross (what's entered at the bookmaker) and
+ * is preserved as-is; stake/potentialReturn/profit are derived from the
+ * net (after-tax) odds.
+ */
+export function recomputeStakesWithTax(
+  bets: ArbitrageBet[],
+  totalStake: number,
+  taxRate: number = DEFAULT_TAX_RATE,
+  taxFreeKeys: Set<string> = DEFAULT_TAX_FREE_KEYS
+): {
+  bets: ArbitrageBet[];
+  profit: number;
+  totalImpliedProbability: number;
+  guaranteedReturn: number;
+  isArbitrage: boolean;
+} {
+  const netOdds = bets.map((bet) => effectiveOdds(bet.odds, bet.bookmakerKey, taxRate, taxFreeKeys));
+  const { stakes, profit, isArbitrage } = calculateArbitrageStakes(netOdds, totalStake);
+  const totalImpliedProbability = netOdds.reduce((sum, odds) => sum + 1 / odds, 0);
+
+  const recomputedBets: ArbitrageBet[] = bets.map((bet, index) => ({
+    ...bet,
+    stake: stakes[index],
+    potentialReturn: Math.round(stakes[index] * netOdds[index] * 100) / 100,
+  }));
+
+  return {
+    bets: recomputedBets,
+    profit,
+    totalImpliedProbability: Math.round(totalImpliedProbability * 10000) / 10000,
+    guaranteedReturn: recomputedBets[0]?.potentialReturn ?? 0,
+    isArbitrage,
+  };
 }
 

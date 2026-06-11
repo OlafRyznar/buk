@@ -160,4 +160,8 @@ export const BOOKMAKER_LOGOS: Record<string, string> = {
   'fortuna': '🔴',
   'lvbet': '🟡',
   'betfan': '🟤',
+  'fuksiarz': '🟣',
+  'etoto': '🔵',
+  'forbet': '🟠',
+  'totalbet': '⚫',
 };

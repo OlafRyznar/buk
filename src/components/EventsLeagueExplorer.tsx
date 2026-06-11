@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { EventWithOdds } from "@/lib/types";
+import TeamFlag from "./TeamFlag";
+import WatchlistButton from "./WatchlistButton";
 
 interface EventsLeagueExplorerProps {
   events: EventWithOdds[];
@@ -40,17 +42,26 @@ export default function EventsLeagueExplorer({ events }: EventsLeagueExplorerPro
       map.get(event.sportTitle)?.push(event);
     }
 
-    const entries = Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], "pl"));
+    const entries = Array.from(map.entries()).sort((a, b) => {
+      const aWc = a[0].includes("Mistrzostwa Świata") ? 0 : 1;
+      const bWc = b[0].includes("Mistrzostwa Świata") ? 0 : 1;
+      if (aWc !== bWc) return aWc - bWc;
+      return a[0].localeCompare(b[0], "pl");
+    });
 
-    return entries.map(([sportTitle, sportEvents]) => ({
-      sportTitle,
-      sportEvents: [...sportEvents].sort(
+    return entries.map(([sportTitle, sportEvents]) => {
+      const sorted = [...sportEvents].sort(
         (a, b) => new Date(a.commenceTime).getTime() - new Date(b.commenceTime).getTime()
-      ),
-      count: sportEvents.length,
-      hasLive: sportTitle.toLowerCase().includes("live"),
-      nextStart: sportEvents[0]?.commenceTime,
-    }));
+      );
+      return {
+        sportTitle,
+        sportEvents: sorted,
+        count: sportEvents.length,
+        hasLive: sportTitle.toLowerCase().includes("live"),
+        isWorldCup: sportTitle.includes("Mistrzostwa Świata"),
+        nextStart: sorted[0]?.commenceTime,
+      };
+    });
   }, [events]);
 
   const [selectedSport, setSelectedSport] = useState<string>("all");
@@ -106,20 +117,48 @@ export default function EventsLeagueExplorer({ events }: EventsLeagueExplorerPro
                 setShowAll(false);
               }}
               className={`rounded-lg border p-3 text-left transition ${
-                selectedSport === group.sportTitle
+                group.isWorldCup
+                  ? selectedSport === group.sportTitle
+                    ? "border-amber-400/60 bg-gradient-to-br from-amber-400/25 to-orange-500/15"
+                    : "border-amber-400/35 bg-gradient-to-br from-amber-400/14 to-orange-500/8 hover:from-amber-400/20 hover:to-orange-500/12"
+                  : selectedSport === group.sportTitle
                   ? "border-sky-400/35 bg-sky-400/14"
                   : "border-white/12 bg-white/6 hover:bg-white/10"
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-white">{group.sportTitle}</p>
-                <span className="rounded-md border border-white/16 bg-white/8 px-2 py-0.5 text-xs text-white/74">
+                <p
+                  className={`text-sm font-medium ${
+                    group.isWorldCup ? "text-amber-100" : "text-white"
+                  }`}
+                >
+                  <span className="mr-1.5">
+                    {group.isWorldCup
+                      ? "🏆"
+                      : group.sportTitle.toLowerCase().includes("koszyk")
+                      ? "🏀"
+                      : "⚽"}
+                  </span>
+                  {group.sportTitle}
+                </p>
+                <span
+                  className={`rounded-md border px-2 py-0.5 text-xs ${
+                    group.isWorldCup
+                      ? "border-amber-400/30 bg-amber-400/12 text-amber-100"
+                      : "border-white/16 bg-white/8 text-white/74"
+                  }`}
+                >
                   {group.count}
                 </span>
               </div>
               <p className="mt-1 text-xs text-white/54">
                 {group.nextStart ? `Najbliższy start: ${formatStart(group.nextStart)}` : "Brak terminu"}
               </p>
+              {group.isWorldCup && (
+                <p className="mt-1 text-xs font-medium text-amber-300">
+                  Mundial 2026 · USA / Kanada / Meksyk
+                </p>
+              )}
               {group.hasLive && (
                 <p className="mt-1 text-xs font-medium text-emerald-300">LIVE</p>
               )}
@@ -162,15 +201,22 @@ export default function EventsLeagueExplorer({ events }: EventsLeagueExplorerPro
                 >
                   <div className="grid gap-2 md:grid-cols-[1.1fr_1fr_0.9fr] md:items-center">
                     <div>
-                      <p className="text-sm font-medium text-white">
-                        {event.homeTeam} vs {event.awayTeam}
+                      <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm font-medium text-white">
+                        <TeamFlag team={event.homeTeam} size={18} />
+                        {event.homeTeam}
+                        <span className="text-white/45">vs</span>
+                        <TeamFlag team={event.awayTeam} size={18} />
+                        {event.awayTeam}
                       </p>
                       <p className="text-xs text-white/54">{event.sportTitle}</p>
                     </div>
                       <p className="break-words text-xs text-white/58">{extractOddsLine(event)}</p>
-                    <div className="text-left md:text-right">
-                      <p className="text-xs text-white/54">Start</p>
-                      <p className="text-sm text-white/84">{formatStart(event.commenceTime)}</p>
+                    <div className="flex items-center justify-between gap-2 md:justify-end">
+                      <div className="text-left md:text-right">
+                        <p className="text-xs text-white/54">Start</p>
+                        <p className="text-sm text-white/84">{formatStart(event.commenceTime)}</p>
+                      </div>
+                      <WatchlistButton eventId={event.id} />
                     </div>
                   </div>
                 </Link>

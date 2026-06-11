@@ -37,18 +37,18 @@ export default function StatCard({
 
   return (
     <div
-      className="glass-panel card-hover rounded-2xl border-white/12 p-4 sm:p-5"
+      className="glass-panel card-hover rounded-xl p-4 sm:p-5"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs tracking-wide text-white/56">{title}</p>
-          <p className={`mt-1 text-2xl font-semibold sm:text-3xl ${colors.text}`}>{value}</p>
+          <p className="text-xs tracking-wide text-white/50">{title}</p>
+          <p className={`mt-1.5 text-2xl font-bold font-mono tracking-tight ${colors.text}`}>{value}</p>
           {subtitle && (
-            <p className="mt-2 max-w-[18rem] text-sm leading-5 text-white/62">{subtitle}</p>
+            <p className="mt-1 text-xs text-white/40">{subtitle}</p>
           )}
         </div>
-        <div className="rounded-xl border border-white/12 bg-white/5 p-2.5">
-          <div className={colors.icon}>{icon}</div>
+        <div className={`p-1.5 ${colors.icon}`}>
+          {icon}
         </div>
       </div>
     </div>

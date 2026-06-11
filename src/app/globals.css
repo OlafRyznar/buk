@@ -18,7 +18,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-space-grotesk);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-bricolage);
   --font-mono: var(--font-ibm-plex-mono);
 }
 
@@ -32,11 +33,16 @@ html {
 
 body {
   min-height: 100vh;
-  background: linear-gradient(180deg, #0f1318 0%, #0d1116 100%);
+  background: transparent;
   color: var(--foreground);
-  font-family: var(--font-space-grotesk), sans-serif;
+  font-family: var(--font-manrope), sans-serif;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-bricolage), var(--font-manrope), sans-serif;
+  letter-spacing: -0.015em;
 }
 
 input,
@@ -87,22 +93,31 @@ button {
 }
 
 .card-hover {
-  transition: box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
 }
 .card-hover:hover {
-  box-shadow: 0 10px 26px rgba(2, 6, 12, 0.34);
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
 .glass-panel {
-  background: linear-gradient(180deg, var(--surface-soft), var(--surface-strong));
-  border: 1px solid var(--card-border);
-  box-shadow: 0 10px 26px rgba(2, 6, 12, 0.25);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 40px rgba(0, 0, 0, 0.28);
 }
 
 .soft-panel {
-  background: rgba(23, 29, 37, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 20px rgba(2, 6, 12, 0.2);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 16px 48px rgba(0, 0, 0, 0.32);
 }
 
 .muted-copy {
@@ -126,4 +141,151 @@ button {
 ::selection {
   background: rgba(96, 165, 250, 0.32);
   color: white;
+}
+
+/* Premium Custom Range Sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+input[type="range"]:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Webkit (Chrome, Safari, Edge, Opera) */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--slider-color, #10b981);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 0 0px var(--slider-color-alpha, rgba(16, 185, 129, 0.2));
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5), 0 0 0 6px var(--slider-color-alpha, rgba(16, 185, 129, 0.2));
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 0 8px var(--slider-color-alpha, rgba(16, 185, 129, 0.25));
+}
+
+/* Mozilla Firefox */
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: var(--slider-color, #10b981);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 0 0px var(--slider-color-alpha, rgba(16, 185, 129, 0.2));
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5), 0 0 0 6px var(--slider-color-alpha, rgba(16, 185, 129, 0.2));
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 0 8px var(--slider-color-alpha, rgba(16, 185, 129, 0.25));
+}
+
+/* Firefox Track style */
+input[type="range"]::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+/* Bubbly border radius overrides to clean standard sizes */
+.rounded-\[30px\],
+.rounded-\[28px\],
+.rounded-\[24px\],
+.rounded-\[22px\],
+.rounded-\[20px\] {
+  border-radius: 0.75rem !important; /* xl */
+}
+
+.rounded-\[18px\],
+.rounded-\[16px\],
+.rounded-\[14px\] {
+  border-radius: 0.5rem !important; /* lg */
+}
+
+@keyframes kenburns {
+  0% {
+    transform: scale(1.05) translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.18) translate(-3%, 2%) rotate(0.4deg);
+  }
+  50% {
+    transform: scale(1.28) translate(2%, -3%) rotate(-0.4deg);
+  }
+  75% {
+    transform: scale(1.18) translate(-2%, -2%) rotate(0.3deg);
+  }
+  100% {
+    transform: scale(1.05) translate(0, 0) rotate(0deg);
+  }
+}
+
+.animate-bg-zoom {
+  animation: kenburns 44s ease-in-out infinite;
+}
+
+/* Soften standard white borders globally for a quiet, consistent UI —
+   strong enough to still separate panels from the background. */
+.border-white\/5,
+.border-white\/6,
+.border-white\/8,
+.border-white\/10,
+.border-white\/12,
+.border-white\/14,
+.border-white\/15,
+.border-white\/16,
+.border-white\/18,
+.border-white\/20,
+[class*="border-white/"] {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Gradient text helper for hero headlines */
+.text-gradient {
+  background: linear-gradient(100deg, #7dd3fc 0%, #38bdf8 45%, #34d399 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Primary action button — shared look for the most important CTA */
+.btn-primary {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 4px 16px -4px rgba(14, 165, 233, 0.5);
+  transition: filter 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 6px 20px -4px rgba(14, 165, 233, 0.6);
+}
+.btn-primary:active {
+  transform: scale(0.98);
 }

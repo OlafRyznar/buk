@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { ArbitrageOpportunity } from "@/lib/types";
-import { profitCategory } from "@/lib/arbitrage";
-import { ALL_BOOKMAKERS } from "@/lib/store-types";
+import { profitCategory, recomputeStakesWithTax, DEFAULT_TAX_FREE_KEYS } from "@/lib/arbitrage";
+import { ALL_BOOKMAKERS, TAX_FREE_BOOKMAKER_KEYS } from "@/lib/store-types";
+import { useApp } from "@/components/AppProvider";
 import { RedirectWarningModal } from "./RedirectWarningModal";
+import TeamFlag from "./TeamFlag";
 import Link from "next/link";
 
 interface ArbitrageCardProps {
@@ -17,8 +19,30 @@ export default function ArbitrageCard({
   showDetails = false,
 }: ArbitrageCardProps) {
   const [redirectModal, setRedirectModal] = useState<{ bookmakerName: string; url: string } | null>(null);
+  const { settings } = useApp();
 
-  const category = profitCategory(opportunity.profit);
+  const recomputed = recomputeStakesWithTax(
+    opportunity.bets,
+    opportunity.stake,
+    settings.taxRate,
+    DEFAULT_TAX_FREE_KEYS
+  );
+
+  const category = profitCategory(recomputed.profit);
+
+  const taxFreeBets = opportunity.bets.filter((bet) =>
+    TAX_FREE_BOOKMAKER_KEYS.includes(bet.bookmakerKey?.toLowerCase().replace(/\s+/g, "") ?? "")
+  );
+  const taxCaption =
+    settings.taxRate === 0
+      ? "Bez podatku od wygranych (stawka w Ustawieniach: 0%)."
+      : taxFreeBets.length === opportunity.bets.length
+        ? "Wszystkie kursy u bukmacherów bez podatku od wygranych."
+        : taxFreeBets.length === 0
+          ? `Uwzględniono ${settings.taxRate}% podatku od wygranych.`
+          : `Uwzględniono ${settings.taxRate}% podatku od wygranych (poza ${taxFreeBets
+              .map((bet) => bet.bookmaker)
+              .join(", ")} — bez podatku).`;
 
   const categoryColors = {
     high: "border-white/14 bg-white/5",
@@ -53,8 +77,12 @@ export default function ArbitrageCard({
               {category === "high" ? "Wysoki" : category === "medium" ? "Średni" : "Niski"}
             </span>
           </div>
-          <h3 className="text-lg font-semibold text-white">
-            {opportunity.event.homeTeam} vs {opportunity.event.awayTeam}
+          <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg font-semibold text-white">
+            <TeamFlag team={opportunity.event.homeTeam} />
+            {opportunity.event.homeTeam}
+            <span className="text-white/40">vs</span>
+            <TeamFlag team={opportunity.event.awayTeam} />
+            {opportunity.event.awayTeam}
           </h3>
           <p className="mt-1 text-xs text-white/58">
             {new Date(opportunity.event.commenceTime).toLocaleString("pl-PL", {
@@ -64,16 +92,29 @@ export default function ArbitrageCard({
           </p>
         </div>
         <div className="w-full text-left sm:w-auto sm:text-right">
-          <p className={`text-2xl font-bold ${profitColors[category]}`}>
-            +{opportunity.profit}%
+          <p className={`text-2xl font-bold ${recomputed.isArbitrage ? profitColors[category] : "text-rose-300"}`}>
+            {recomputed.isArbitrage ? `+${recomputed.profit}%` : "—"}
           </p>
-          <p className="text-xs uppercase tracking-[0.2em] text-white/48">gwarantowany zysk</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-white/48">
+            {recomputed.isArbitrage ? "gwarantowany zysk (po podatku)" : "po podatku: brak zysku"}
+          </p>
+          <p className="mt-1 max-w-[220px] text-[10px] leading-4 text-white/35 sm:ml-auto">
+            {taxCaption}
+          </p>
         </div>
       </div>
 
-      {/* Bets on mobile */}
-      <div className="space-y-2 md:hidden">
-        {opportunity.bets.map((bet, idx) => {
+      {!recomputed.isArbitrage && (
+        <div className="mb-4 rounded-lg border border-rose-400/20 bg-rose-400/[0.06] px-3 py-2 text-xs leading-5 text-rose-200">
+          Po {settings.taxRate}% podatku suma 1/kurs (netto) wynosi{" "}
+          {(recomputed.totalImpliedProbability * 100).toFixed(2)}% — ten układ przestał być
+          surebetem. Stawki poniżej wyrównują zwrot, ale bez gwarantowanego zysku.
+        </div>
+      )}
+
+      {/* Bets on mobile - Compact Apple-style list rows */}
+      <div className="space-y-1.5 md:hidden">
+        {recomputed.bets.map((bet, idx) => {
           const bmInfo = ALL_BOOKMAKERS.find(
             (b) =>
               b.key === bet.bookmakerKey?.toLowerCase().replace(/\s+/g, "") ||
@@ -81,44 +122,37 @@ export default function ArbitrageCard({
           );
 
           return (
-            <div key={idx} className="rounded-lg border border-white/12 bg-black/18 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-white">{bet.outcome}</p>
-                  <p className="mt-0.5 text-xs text-white/58">{bet.bookmaker}</p>
+            <div key={idx} className="flex items-center justify-between gap-3 py-2 border-b border-white/[0.03] last:border-0">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <span className="text-sm font-semibold text-white">{bet.outcome}</span>
+                  <span className="text-[10px] text-white/40">{bet.bookmaker}</span>
                 </div>
-                <p className="text-right text-xs text-white/54">Kurs: <span className="font-mono text-amber-200">{bet.odds.toFixed(2)}</span></p>
-              </div>
-
-              <div className="mt-2 grid grid-cols-2 gap-2 rounded-md border border-white/10 bg-white/4 p-2">
-                <div>
-                  <p className="text-[11px] text-white/44">Stawka</p>
-                  <p className="text-sm font-mono text-white">{bet.stake.toFixed(2)} zł</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-white/44">Wygrana</p>
-                  <p className="text-sm font-mono text-emerald-100">{bet.potentialReturn.toFixed(2)} zł</p>
+                <div className="mt-0.5 text-xs text-white/50">
+                  Stawka: <span className="font-mono text-white/70 font-medium">{bet.stake.toFixed(0)} zł</span> · Wygrana: <span className="font-mono text-emerald-400 font-medium">{bet.potentialReturn.toFixed(0)} zł</span>
                 </div>
               </div>
-
-              <button
-                onClick={() =>
-                  setRedirectModal({
-                    bookmakerName: bet.bookmaker,
-                    url: bmInfo?.url ?? "#",
-                  })
-                }
-                className="mt-3 w-full rounded-md border border-white/18 bg-white/10 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/16"
-              >
-                Obstaw ten wynik
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="font-mono text-amber-300 font-bold text-xs bg-white/[0.04] px-2 py-1 rounded">@{bet.odds.toFixed(2)}</span>
+                <button
+                  onClick={() =>
+                    setRedirectModal({
+                      bookmakerName: bet.bookmaker,
+                      url: bmInfo?.url ?? "#",
+                    })
+                  }
+                  className="rounded-lg bg-white/5 border border-white/[0.04] px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-white/10"
+                >
+                  Obstaw
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
 
       {/* Bets table on larger screens */}
-      <div className="hidden overflow-x-auto rounded-lg border border-white/12 bg-black/18 md:block">
+      <div className="hidden overflow-x-auto md:block mt-4">
         <table className="min-w-[720px] w-full text-sm">
           <thead>
             <tr className="border-b border-white/10">
@@ -131,7 +165,7 @@ export default function ArbitrageCard({
             </tr>
           </thead>
           <tbody>
-            {opportunity.bets.map((bet, idx) => {
+            {recomputed.bets.map((bet, idx) => {
               const bmInfo = ALL_BOOKMAKERS.find(
                 (b) =>
                   b.key === bet.bookmakerKey?.toLowerCase().replace(/\s+/g, "") ||
@@ -158,9 +192,9 @@ export default function ArbitrageCard({
                           url: bmInfo?.url ?? "#",
                         })
                       }
-                      className="whitespace-nowrap rounded-md border border-white/18 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/16"
+                      className="whitespace-nowrap rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/[0.08]"
                     >
-                      Obstaw →
+                      Obstaw
                     </button>
                   </td>
                 </tr>
@@ -171,31 +205,35 @@ export default function ArbitrageCard({
       </div>
 
       {/* Summary */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/12 pt-4">
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <span className="text-white/62">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3">
+        <div className="flex flex-wrap items-center gap-4 text-xs">
+          <span className="text-white/40">
             Stawka:{" "}
-            <span className="text-white font-mono">
+            <span className="text-white font-mono font-medium">
               {opportunity.stake.toFixed(2)} zł
             </span>
           </span>
-          <span className="text-white/62">
+          <span className="text-white/40">
             Zwrot:{" "}
-            <span className="font-mono font-bold text-emerald-50">
-              {opportunity.guaranteedReturn.toFixed(2)} zł
+            <span className="font-mono font-bold text-emerald-400">
+              {recomputed.guaranteedReturn.toFixed(2)} zł
             </span>
           </span>
-          <span className="text-white/62">
+          <span className="text-white/40">
             Zysk:{" "}
-            <span className={`font-mono font-bold ${profitColors[category]}`}>
-              {(opportunity.guaranteedReturn - opportunity.stake).toFixed(2)} zł
+            <span
+              className={`font-mono font-bold ${
+                recomputed.isArbitrage ? profitColors[category] : "text-rose-300"
+              }`}
+            >
+              {(recomputed.guaranteedReturn - opportunity.stake).toFixed(2)} zł
             </span>
           </span>
         </div>
         {!showDetails && (
           <Link
             href={`/events/${opportunity.event.id}`}
-            className="rounded-md border border-white/18 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/16"
+            className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/[0.08]"
           >
             Szczegóły
           </Link>

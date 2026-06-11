@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { useApp } from "@/components/AppProvider";
 
 const navItems = [
@@ -30,15 +30,6 @@ const navItems = [
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
-  {
-    href: "/calculator",
-    label: "Kalkulator",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
       </svg>
     ),
   },
@@ -93,8 +84,67 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, settings } = useApp();
+
+  const [syncInfo, setSyncInfo] = useState<{
+    isSyncing: boolean;
+    lastSyncTime: number | null;
+    lastSyncCount: number;
+    hasData: boolean;
+  }>({
+    isSyncing: false,
+    lastSyncTime: null,
+    lastSyncCount: 0,
+    hasData: false
+  });
+  const [localSyncing, setLocalSyncing] = useState(false);
+
+  const fetchSyncStatus = async () => {
+    try {
+      const res = await fetch('/api/sync');
+      if (res.ok) {
+        const data = await res.json();
+        setSyncInfo(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchSyncStatus();
+    const interval = setInterval(fetchSyncStatus, 20000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSync = async () => {
+    if (localSyncing || syncInfo.isSyncing) return;
+    setLocalSyncing(true);
+    try {
+      const res = await fetch('/api/sync', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setSyncInfo({
+          isSyncing: false,
+          lastSyncTime: data.timestamp,
+          lastSyncCount: data.count,
+          hasData: true
+        });
+        router.refresh();
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Błąd synchronizacji.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Nie udało się połączyć z serwerem synchronizacji.');
+    } finally {
+      setLocalSyncing(false);
+      fetchSyncStatus();
+    }
+  };
 
   const isItemActive = (href: string) => {
     if (href === "/") {
@@ -104,8 +154,66 @@ export default function Sidebar() {
     return pathname.startsWith(href);
   };
 
+  const renderSyncBlock = () => {
+    // Static export has no API/scraper — hide the sync panel entirely.
+    if (process.env.NEXT_PUBLIC_STATIC_EXPORT === "1") return null;
+    const active = localSyncing || syncInfo.isSyncing;
+    const timeText = syncInfo.lastSyncTime 
+      ? new Date(syncInfo.lastSyncTime).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      : 'nigdy';
+
+    return (
+      <div className="rounded-xl border border-white/5 bg-white/[0.015] p-3 text-xs space-y-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-white/40 font-medium">Baza danych</span>
+          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+            syncInfo.hasData 
+              ? 'bg-emerald-500/10 text-emerald-400' 
+              : 'bg-amber-500/10 text-amber-400'
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${syncInfo.hasData ? 'bg-emerald-400' : 'bg-amber-400'} ${active ? 'animate-pulse' : ''}`} />
+            {syncInfo.hasData ? `Live (${syncInfo.lastSyncCount} meczów)` : 'Demo'}
+          </span>
+        </div>
+        
+        <div className="flex items-center justify-between text-white/30">
+          <span>Ostatnia synch.:</span>
+          <span className="font-mono">{timeText}</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleSync}
+          disabled={active}
+          className={`w-full flex items-center justify-center gap-2 rounded-lg py-2 text-xs font-semibold text-white transition ${
+            active
+              ? 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'
+              : 'btn-primary'
+          }`}
+        >
+          {active ? (
+            <>
+              <svg className="animate-spin h-3.5 w-3.5 text-white/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Skanowanie 8 bukmacherów... (1–2 min)
+            </>
+          ) : (
+            <>
+              <svg className="h-3.5 w-3.5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3 3L22 4" />
+              </svg>
+              Skanuj kursy (8 bukmacherów)
+            </>
+          )}
+        </button>
+      </div>
+    );
+  };
+
   const renderNav = (mobile = false) => (
-    <nav className="space-y-1">
+    <nav className="space-y-1.5">
       {navItems.map((item) => {
         const isActive = isItemActive(item.href);
         const showBadge = item.badge && unreadCount > 0;
@@ -115,25 +223,28 @@ export default function Sidebar() {
             key={item.href}
             href={item.href}
             onClick={() => setIsOpen(false)}
-            className={`group flex items-center gap-3 rounded-lg border-l-2 px-3 transition-colors ${
+            className={`group relative flex items-center gap-3 rounded-lg px-3 transition-colors ${
               isActive
-                ? "border-l-sky-400 border-white/12 bg-white/8 text-white"
-                : "border-l-transparent border-transparent text-white/74 hover:border-white/10 hover:bg-white/6 hover:text-white"
-            } ${mobile ? "py-3 text-base" : "py-2.5 text-sm"}`}
+                ? "bg-gradient-to-r from-sky-400/15 to-transparent text-white font-semibold"
+                : "text-white/60 hover:bg-white/5 hover:text-white"
+            } ${mobile ? "py-3 text-base" : "py-2 text-sm"}`}
           >
+            {isActive && (
+              <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-sky-400" />
+            )}
             <span
-              className={`relative rounded-md p-1.5 transition ${
-                isActive ? "bg-white/10 text-sky-300" : "bg-black/15 text-white/58 group-hover:text-white"
+              className={`relative rounded-md p-1 transition-colors ${
+                isActive ? "text-sky-400" : "text-white/40 group-hover:text-white/80"
               }`}
             >
               {item.icon}
               {showBadge && (
-                <span suppressHydrationWarning className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                <span suppressHydrationWarning className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </span>
-            <span className="font-medium tracking-[0.02em]">{item.label}</span>
+            <span className="tracking-[0.01em]">{item.label}</span>
           </Link>
         );
       })}
@@ -145,7 +256,7 @@ export default function Sidebar() {
       <div className="fixed inset-x-0 top-0 z-50 px-3 pt-3 lg:hidden">
         <div className="soft-panel flex items-center justify-between rounded-lg border border-white/12 px-3 py-2.5">
           <Link href="/" className="flex items-center gap-3" onClick={() => setIsOpen(false)}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md border border-white/20 bg-white/8 text-xs font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-cyan-600 text-xs font-bold text-white shadow-[0_4px_14px_-4px_rgba(56,189,248,0.6)]">
               B
             </div>
             <div>
@@ -187,6 +298,11 @@ export default function Sidebar() {
               </button>
             </div>
             {renderNav(true)}
+            
+            <div className="mt-4">
+              {renderSyncBlock()}
+            </div>
+
             <div className="mt-4 rounded-lg border border-white/12 bg-white/6 p-3">
               <div className="flex items-center gap-2 text-sm text-white/86">
                 <span className="h-2 w-2 rounded-full bg-amber-300" />
@@ -200,46 +316,41 @@ export default function Sidebar() {
         </div>
       )}
 
-      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[288px] px-4 py-4 lg:block">
-        <div className="soft-panel flex h-full flex-col rounded-xl border border-white/12 p-4">
-          <div className="border-b border-white/12 pb-4">
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[280px] border-r border-white/8 bg-[#0b0e11]/25 backdrop-blur-xl lg:block">
+        <div className="flex h-full flex-col p-6">
+          <div className="border-b border-white/8 pb-4">
             <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md border border-white/20 bg-white/8 text-xs font-bold text-white">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-cyan-600 text-xs font-bold text-white shadow-[0_4px_14px_-4px_rgba(56,189,248,0.6)]">
                 B
               </div>
               <div>
                 <h1 className="text-base font-semibold text-white">BukScan</h1>
-                <p className="text-[11px] text-white/52">prosty panel arbitrażu</p>
+                <p className="text-[11px] text-white/50">panel arbitrażu</p>
               </div>
             </Link>
-
-            <p className="mt-3 text-sm leading-6 text-white/66">
-              Najpierw najważniejsze dane. Bez przeładowania i bez zbędnych elementów.
-            </p>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-4">{renderNav()}</div>
+          <div className="flex-1 overflow-y-auto py-5">{renderNav()}</div>
 
-          <div className="space-y-2 border-t border-white/12 pt-4">
-            <div className="rounded-lg border border-white/12 bg-white/6 p-3">
-              <div className="flex items-center gap-2 text-sm text-white/86">
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-300 animate-pulse-green" />
+          <div className="space-y-3 border-t border-white/8 pt-5">
+            {renderSyncBlock()}
+
+            <div className="rounded-xl border border-white/8 bg-transparent p-3 text-xs">
+              <div className="flex items-center gap-2 font-medium text-white/85">
+                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
                 Tryb demo
               </div>
-              <p className="mt-1 text-xs leading-5 text-white/62">
-                Wirtualne saldo:{" "}
-                <span className="font-mono font-semibold text-white">
+              <p className="mt-1 text-white/50 font-medium">
+                Saldo:{" "}
+                <span className="font-mono text-white">
                   {settings.virtualBalance.toLocaleString("pl-PL")} zł
                 </span>
               </p>
               <Link
                 href="/settings"
-                className="mt-2 inline-flex items-center gap-1 text-xs text-sky-300 transition hover:text-sky-200"
+                className="mt-2 inline-flex items-center gap-1 font-semibold text-sky-400 hover:text-sky-300 transition"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l14 9-14 9V3z" />
-                </svg>
-                Przejdź na Premium
+                Przejdź na Premium &rarr;
               </Link>
             </div>
           </div>
