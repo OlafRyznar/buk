@@ -25,6 +25,15 @@ const navItems = [
     ),
   },
   {
+    href: "/kalkulator",
+    label: "Kalkulator",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m-6 4h6m-6 4h4M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+      </svg>
+    ),
+  },
+  {
     href: "/events",
     label: "Wydarzenia",
     icon: (
@@ -124,18 +133,19 @@ export default function Sidebar() {
     setLocalSyncing(true);
     try {
       const res = await fetch('/api/sync', { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+      if (res.ok && data.success) {
         setSyncInfo({
           isSyncing: false,
-          lastSyncTime: data.timestamp,
-          lastSyncCount: data.count,
+          lastSyncTime: data.timestamp ?? syncInfo.lastSyncTime,
+          lastSyncCount: data.count ?? syncInfo.lastSyncCount,
           hasData: true
         });
         router.refresh();
+        // Cooldown hit — data was already fresh, let the user know.
+        if (data.skipped && data.message) alert(data.message);
       } else {
-        const data = await res.json();
-        alert(data.message || 'Błąd synchronizacji.');
+        alert(data.message || data.error || 'Błąd synchronizacji.');
       }
     } catch (e) {
       console.error(e);
