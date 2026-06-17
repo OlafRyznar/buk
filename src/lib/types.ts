@@ -15,6 +15,11 @@ export interface OddsApiBookmaker {
   title: string;
   last_update: string;
   markets: OddsApiMarket[];
+  // Direct link to this match on the bookmaker's site, when the scraper
+  // could capture one safely (a real <a href> on the match row, not a
+  // guessed selector) — otherwise the UI falls back to the bookmaker's
+  // homepage.
+  event_url?: string;
 }
 
 export interface OddsApiMarket {
@@ -46,6 +51,7 @@ export interface BookmakerOdds {
   outcome: string;
   odds: number;
   lastUpdate: string;
+  eventUrl?: string;
 }
 
 export interface EventWithOdds {
@@ -88,6 +94,7 @@ export interface ArbitrageBet {
   odds: number;
   stake: number;
   potentialReturn: number;
+  eventUrl?: string;
 }
 
 export interface NearArbitrageOpportunity {

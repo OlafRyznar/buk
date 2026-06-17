@@ -80,6 +80,7 @@ export function transformToEventWithOdds(apiEvent: OddsApiEvent): EventWithOdds 
           outcome: outcome.name,
           odds: outcome.price,
           lastUpdate: bookmaker.last_update,
+          eventUrl: bookmaker.event_url,
         });
       }
     }

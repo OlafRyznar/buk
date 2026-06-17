@@ -77,239 +77,221 @@ function ValueBetCalculator() {
   );
 }
 
-// ── Asian Handicap Calculator ──────────────────────────────────────────────────
-
-function AsianHandicapCalculator() {
-  const [stake, setStake] = useState(500);
-  const [odds, setOdds] = useState(1.95);
-  const [handicap, setHandicap] = useState<0 | 0.25 | 0.5 | 0.75 | 1>(-0.5 as 0.5);
-  const [result, setResult] = useState<'win' | 'loss' | 'draw'>('win');
-
-  // For quarter handicaps, half stake wins/half refunded or half wins/half loses
-  const isQuarter = Math.abs(handicap % 0.5) === 0.25;
-  
-  let payout = 0;
-  let description = '';
-
-  if (!isQuarter) {
-    if (result === 'win') {
-      payout = stake * odds;
-      description = 'Pełna wygrana – zakład wygrany';
-    } else if (result === 'draw' && handicap === 0) {
-      payout = stake;
-      description = 'Handicap 0: zwrot stawki przy remisie';
-    } else {
-      payout = 0;
-      description = 'Przegrana – strata stawki';
-    }
-  } else {
-    const halfStake = stake / 2;
-    if (result === 'win') {
-      payout = stake * odds;
-      description = 'Obie połowy wygrywają';
-    } else if (result === 'draw') {
-      payout = halfStake * odds + halfStake;
-      description = 'Jedna połowa wygrywa, druga zwracana';
-    } else {
-      payout = halfStake;
-      description = 'Jedna połowa przegrywa, druga zwracana';
-    }
-  }
-
-  const profit = payout - stake;
-
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <label className="block text-xs text-white/42 mb-2">Stawka (zł)</label>
-          <input
-            type="number"
-            value={stake}
-            step={10}
-            min={1}
-            onChange={e => setStake(parseFloat(e.target.value) || 1)}
-            className="w-full rounded-[16px] border border-white/12 bg-white/8 px-4 py-3 text-white font-mono focus:border-white/25 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-white/42 mb-2">Kurs</label>
-          <input
-            type="number"
-            value={odds}
-            step={0.01}
-            min={1.01}
-            onChange={e => setOdds(parseFloat(e.target.value) || 1.01)}
-            className="w-full rounded-[16px] border border-white/12 bg-white/8 px-4 py-3 text-white font-mono focus:border-white/25 focus:outline-none"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-white/42 mb-2">Handicap azjatycki</label>
-          <select
-            value={handicap}
-            onChange={e => setHandicap(parseFloat(e.target.value) as 0)}
-            className="w-full rounded-[16px] border border-white/12 bg-[#0e1c2e] px-4 py-3 text-white focus:border-white/25 focus:outline-none"
-          >
-            {[-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1].map(h => (
-              <option key={h} value={h}>{h > 0 ? `+${h}` : h}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-white/42 mb-2">Wynik (po uwzgl. handicapu)</label>
-          <select
-            value={result}
-            onChange={e => setResult(e.target.value as 'win' | 'loss' | 'draw')}
-            className="w-full rounded-[16px] border border-white/12 bg-[#0e1c2e] px-4 py-3 text-white focus:border-white/25 focus:outline-none"
-          >
-            <option value="win">Wygrana</option>
-            <option value="draw">Remis / push</option>
-            <option value="loss">Przegrana</option>
-          </select>
-        </div>
-      </div>
-
-      <div className={`rounded-xl border p-5 bg-transparent ${profit > 0 ? 'border-emerald-500/20' : profit === 0 ? 'border-white/10' : 'border-rose-500/20'}`}>
-        <p className="text-sm text-white/52 mb-3">{description}</p>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <p className="text-xs text-white/40">Wypłata</p>
-            <p className="text-2xl font-bold font-mono text-white mt-1">{payout.toFixed(2)} zł</p>
-          </div>
-          <div>
-            <p className="text-xs text-white/40">Zysk / strata</p>
-            <p className={`text-2xl font-bold font-mono mt-1 ${profit > 0 ? 'text-emerald-300' : profit < 0 ? 'text-rose-300' : 'text-white/60'}`}>
-              {profit >= 0 ? '+' : ''}{profit.toFixed(2)} zł
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-white/40">Opis</p>
-            <p className="text-sm text-white/60 mt-1">
-              {isQuarter ? 'Handicap ćwiartkowy: stawka dzielona na 2 zakłady' : 'Handicap standardowy'}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Hedge Calculator ──────────────────────────────────────────────────────────
+// "Kontrowanie": you already backed a team pre-match (or earlier in-play).
+// Now you can also back another live outcome (typically the draw) to lock in
+// a win on two of the three possible results. The third result — the one
+// neither bet covers — is a real loss, not just a footnote, so it gets its
+// own clearly-marked scenario instead of being left out of the math.
 
 function HedgeCalculator() {
+  const [hasThirdOutcome, setHasThirdOutcome] = useState(true);
+  const [originalLabel, setOriginalLabel] = useState('Mój zespół wygrywa');
   const [originalStake, setOriginalStake] = useState(500);
   const [originalOdds, setOriginalOdds] = useState(3.5);
+  const [hedgeLabel, setHedgeLabel] = useState('Remis');
   const [hedgeOdds, setHedgeOdds] = useState(1.8);
+  const [thirdLabel, setThirdLabel] = useState('Rywal wygrywa');
+  const [autoStake, setAutoStake] = useState(true);
+  const [manualHedgeStake, setManualHedgeStake] = useState(280);
 
   const potentialWin = originalStake * originalOdds;
-  const hedgeStake = potentialWin / hedgeOdds;
+  const autoHedgeStake = potentialWin / hedgeOdds;
+  const hedgeStake = autoStake ? autoHedgeStake : manualHedgeStake;
   const profitIfOriginalWins = potentialWin - originalStake - hedgeStake;
   const profitIfHedgeWins = hedgeStake * hedgeOdds - hedgeStake - originalStake;
+  const lossIfThirdHappens = -(originalStake + hedgeStake);
   const totalStake = originalStake + hedgeStake;
 
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-sky-500/20 bg-transparent p-4">
         <p className="text-sm text-sky-100/80">
-          Kalkulator kontrowania – jeśli zdążyłeś postawić tylko pierwszy zakład, a kursy potem
-          się zmieniły, użyj tego narzędzia, aby obliczyć stawkę zabezpieczającą i zminimalizować
-          ewentualną stratę.
+          Już postawiłeś na jeden wynik. Teraz dokładasz zakład na inny wynik (np. remis) po
+          aktualnym kursie live, żeby wygrać w obu przypadkach. Jeśli mecz ma trzeci możliwy
+          wynik, którego nie obstawiasz w żadnym z dwóch zakładów — kalkulator pokazuje, ile
+          stracisz, jeśli właśnie on się wydarzy.
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-3">
+
+      <div className="flex gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1 w-fit">
         {[
-          { label: 'Już postawiona stawka (zł)', val: originalStake, set: setOriginalStake, step: 10 },
-          { label: 'Oryginalny kurs', val: originalOdds, set: setOriginalOdds, step: 0.01 },
-          { label: 'Nowy kurs (kontrujący)', val: hedgeOdds, set: setHedgeOdds, step: 0.01 },
-        ].map(({ label, val, set, step }) => (
-          <div key={label}>
-            <label className="block text-xs text-white/42 mb-2">{label}</label>
-            <input
-              type="number"
-              value={val}
-              step={step}
-              min={1.01}
-              onChange={e => set(parseFloat(e.target.value) || 1.01)}
-              className="w-full rounded-[16px] border border-white/12 bg-white/8 px-4 py-3 text-white font-mono focus:border-white/25 focus:outline-none"
-            />
-          </div>
+          { v: true, l: '3 wyniki (z remisem)' },
+          { v: false, l: '2 wyniki (bez remisu)' },
+        ].map(({ v, l }) => (
+          <button
+            key={String(v)}
+            type="button"
+            onClick={() => setHasThirdOutcome(v)}
+            className={`rounded-md px-3.5 py-1.5 text-xs font-medium transition ${
+              hasThirdOutcome === v ? 'bg-sky-400/15 text-sky-200' : 'text-white/55 hover:text-white'
+            }`}
+          >
+            {l}
+          </button>
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Stawka kontrująca', value: `${hedgeStake.toFixed(2)} zł`, color: 'text-sky-200' },
-          { label: 'Łączna zaangażowana kwota', value: `${totalStake.toFixed(2)} zł`, color: 'text-white' },
-          { label: 'Zysk jeśli wygra oryginał', value: `${profitIfOriginalWins >= 0 ? '+' : ''}${profitIfOriginalWins.toFixed(2)} zł`, color: profitIfOriginalWins >= 0 ? 'text-emerald-300' : 'text-rose-300' },
-          { label: 'Zysk jeśli wygra kontr', value: `${profitIfHedgeWins >= 0 ? '+' : ''}${profitIfHedgeWins.toFixed(2)} zł`, color: profitIfHedgeWins >= 0 ? 'text-emerald-300' : 'text-rose-300' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="rounded-xl border border-white/8 bg-transparent p-4">
-            <p className="text-xs text-white/40">{label}</p>
-            <p className={`text-xl font-bold font-mono mt-2 ${color}`}>{value}</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-3 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.03] p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">Zakład już postawiony</p>
+          <div>
+            <label className="block text-xs text-white/42 mb-1.5">Wynik</label>
+            <input
+              type="text"
+              value={originalLabel}
+              onChange={e => setOriginalLabel(e.target.value)}
+              className="w-full rounded-[14px] border border-white/12 bg-white/8 px-3 py-2 text-sm text-white focus:border-white/25 focus:outline-none"
+            />
           </div>
-        ))}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-white/42 mb-1.5">Stawka (zł)</label>
+              <input
+                type="number"
+                value={originalStake}
+                step={10}
+                min={1}
+                onChange={e => setOriginalStake(parseFloat(e.target.value) || 1)}
+                className="w-full rounded-[14px] border border-white/12 bg-white/8 px-3 py-2 text-sm text-white font-mono focus:border-white/25 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-white/42 mb-1.5">Kurs</label>
+              <input
+                type="number"
+                value={originalOdds}
+                step={0.01}
+                min={1.01}
+                onChange={e => setOriginalOdds(parseFloat(e.target.value) || 1.01)}
+                className="w-full rounded-[14px] border border-white/12 bg-white/8 px-3 py-2 text-sm text-white font-mono focus:border-white/25 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-sky-500/15 bg-sky-500/[0.03] p-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-sky-300">Kontra (live)</p>
+          <div>
+            <label className="block text-xs text-white/42 mb-1.5">Wynik</label>
+            <input
+              type="text"
+              value={hedgeLabel}
+              onChange={e => setHedgeLabel(e.target.value)}
+              className="w-full rounded-[14px] border border-white/12 bg-white/8 px-3 py-2 text-sm text-white focus:border-white/25 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-white/42 mb-1.5">Aktualny kurs live</label>
+            <input
+              type="number"
+              value={hedgeOdds}
+              step={0.01}
+              min={1.01}
+              onChange={e => setHedgeOdds(parseFloat(e.target.value) || 1.01)}
+              className="w-full rounded-[14px] border border-white/12 bg-white/8 px-3 py-2 text-sm text-white font-mono focus:border-white/25 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-xs text-white/42">Stawka kontrująca</label>
+              <div className="flex gap-1 rounded-md border border-white/10 bg-white/[0.03] p-0.5 text-[11px]">
+                {[
+                  { v: true, l: 'Auto' },
+                  { v: false, l: 'Własna' },
+                ].map(({ v, l }) => (
+                  <button
+                    key={String(v)}
+                    type="button"
+                    onClick={() => setAutoStake(v)}
+                    className={`rounded px-2 py-0.5 transition ${
+                      autoStake === v ? 'bg-sky-400/20 text-sky-200' : 'text-white/45 hover:text-white'
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {autoStake ? (
+              <div className="w-full rounded-[14px] border border-white/8 bg-white/[0.03] px-3 py-2 text-sm font-mono text-sky-200">
+                {autoHedgeStake.toFixed(2)} zł
+                <span className="ml-1.5 text-[11px] font-sans text-white/35">(wyrównuje zysk z oryginałem)</span>
+              </div>
+            ) : (
+              <input
+                type="number"
+                value={manualHedgeStake}
+                step={10}
+                min={1}
+                onChange={e => setManualHedgeStake(parseFloat(e.target.value) || 1)}
+                className="w-full rounded-[14px] border border-white/12 bg-white/8 px-3 py-2 text-sm text-white font-mono focus:border-white/25 focus:outline-none"
+              />
+            )}
+          </div>
+        </div>
       </div>
+
+      {hasThirdOutcome && (
+        <div>
+          <label className="block text-xs text-white/42 mb-1.5">Trzeci, nieobstawiony wynik</label>
+          <input
+            type="text"
+            value={thirdLabel}
+            onChange={e => setThirdLabel(e.target.value)}
+            className="w-full max-w-sm rounded-[14px] border border-white/12 bg-white/8 px-3 py-2 text-sm text-white focus:border-white/25 focus:outline-none"
+          />
+        </div>
+      )}
+
+      <div className={`grid gap-3 sm:grid-cols-2 ${hasThirdOutcome ? 'lg:grid-cols-3' : ''}`}>
+        <div className="rounded-xl border border-emerald-500/20 bg-transparent p-4">
+          <p className="text-xs text-white/40">Jeśli: {originalLabel || 'oryginał'}</p>
+          <p className={`mt-2 text-xl font-bold font-mono ${profitIfOriginalWins >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+            {profitIfOriginalWins >= 0 ? '+' : ''}{profitIfOriginalWins.toFixed(2)} zł
+          </p>
+        </div>
+        <div className="rounded-xl border border-sky-500/20 bg-transparent p-4">
+          <p className="text-xs text-white/40">Jeśli: {hedgeLabel || 'kontra'}</p>
+          <p className={`mt-2 text-xl font-bold font-mono ${profitIfHedgeWins >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+            {profitIfHedgeWins >= 0 ? '+' : ''}{profitIfHedgeWins.toFixed(2)} zł
+          </p>
+        </div>
+        {hasThirdOutcome && (
+          <div className="rounded-xl border border-rose-500/30 bg-rose-500/[0.06] p-4">
+            <p className="text-xs text-rose-200/70">⚠ Jeśli: {thirdLabel || 'trzeci wynik'} (nieobstawiony)</p>
+            <p className="mt-2 text-xl font-bold font-mono text-rose-300">
+              {lossIfThirdHappens.toFixed(2)} zł
+            </p>
+          </div>
+        )}
+      </div>
+
+      <p className="text-xs text-white/40">
+        Łącznie zaangażowane: <span className="font-mono text-white/70">{totalStake.toFixed(2)} zł</span>
+      </p>
     </div>
   );
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-type Tab = 'valuebet' | 'asian' | 'hedge';
+type Tab = 'valuebet' | 'hedge';
 
 const TABS: { id: Tab; label: string; desc: string }[] = [
   { id: 'valuebet', label: 'ValueBet', desc: 'Znajdź zakłady z dodatnią wartością oczekiwaną' },
-  { id: 'asian', label: 'Handicap Azjatycki', desc: 'Oblicz wypłaty dla handicapów ćwiartkowych' },
-  { id: 'hedge', label: 'Kalkulator Kontrowania', desc: 'Zabezpiecz pierwszą stronę zakładu w trybie ratunkowym' },
+  { id: 'hedge', label: 'Kalkulator Kontrowania', desc: 'Dograj drugi zakład live i zobacz wszystkie scenariusze' },
 ];
 
-const STRATEGY_GUIDES: Record<
-  Tab,
-  {
-    intro: string;
-    when: string;
-    risk: string;
-    steps: string[];
-  }
-> = {
+const STRATEGY_GUIDES: Record<Tab, { intro: string }> = {
   valuebet: {
     intro:
       'ValueBet to zakład, gdzie Twój szacunek prawdopodobieństwa jest wyższy niż wycena bukmachera.',
-    when:
-      'Użyj, gdy masz własny model, statystyki lub przewagę informacyjną dla danego rynku.',
-    risk:
-      'Nawet zakład z dodatnim EV może przegrać – wynik pojedynczego kuponu nie potwierdza ani nie obala przewagi.',
-    steps: [
-      'Podaj kurs bukmachera i swoje prawdopodobieństwo.',
-      'Sprawdź EV i przewagę procentową.',
-      'Ustal stawkę konserwatywnie, np. ułamkiem Kelly.',
-    ],
-  },
-  asian: {
-    intro:
-      'Handicap azjatycki pozwala lepiej kontrolować ryzyko dzięki częściowym zwrotom stawki.',
-    when:
-      'Użyj, gdy chcesz zmniejszyć wariancję i unikać skrajnych scenariuszy wygrana/przegrana.',
-    risk:
-      'Błędna interpretacja ćwiartek handicapu może prowadzić do złej oceny wyniku.',
-    steps: [
-      'Wybierz handicap i możliwy wynik zakładu.',
-      'Sprawdź wypłatę i końcowy profit/stratę.',
-      'Porównaj kilka wariantów przed postawieniem kuponu.',
-    ],
   },
   hedge: {
     intro:
-      'Kontrowanie służy do ratowania pozycji, gdy pierwszy zakład już zagrałeś, a kursy się zmieniły.',
-    when:
-      'Użyj, gdy rynek odjechał i chcesz ograniczyć stratę albo zamknąć pozycję na plusie.',
-    risk:
-      'Wysoka stawka kontrująca może mocno obciążyć bankroll przy niskim kursie hedge.',
-    steps: [
-      'Wprowadź stawkę i kurs pierwszego zakładu.',
-      'Dodaj nowy kurs na kontrę.',
-      'Sprawdź oba scenariusze wyniku i wybierz bezpieczniejszy wariant.',
-    ],
+      'Kontrowanie polega na dograniu drugiego zakładu na inny wynik, gdy pierwszy już zagrałeś — żeby wygrać niezależnie od tego, który z obu trafi.',
   },
 };
 
@@ -322,7 +304,7 @@ export default function StrategiesPage() {
     <div className="w-full space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white sm:text-3xl">Zaawansowane Strategie</h1>
-        <p className="mt-1 text-white/52">Kalkulatory dla value-betów, handicapów azjatyckich i kontrowania.</p>
+        <p className="mt-1 text-white/52">Kalkulatory dla value-betów i kontrowania w trakcie meczu.</p>
       </div>
 
       {/* Tab selector */}
@@ -350,27 +332,6 @@ export default function StrategiesPage() {
           {activeConfig?.label}
         </h2>
         <p className="mt-1.5 text-xs text-white/50">{guide.intro}</p>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <div className="rounded-xl border border-white/8 bg-transparent p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Kiedy użyć</p>
-            <p className="mt-1.5 text-xs text-white/60 leading-5">{guide.when}</p>
-          </div>
-          <div className="rounded-xl border border-white/8 bg-transparent p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Na co uważać</p>
-            <p className="mt-1.5 text-xs text-white/60 leading-5">{guide.risk}</p>
-          </div>
-          <div className="rounded-xl border border-white/8 bg-transparent p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Szybkie kroki</p>
-            <ol className="mt-1.5 space-y-1 text-xs text-white/60 leading-5">
-              {guide.steps.map((step, index) => (
-                <li key={step}>
-                  {index + 1}. {step}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
       </div>
 
       {/* Active calculator */}
@@ -380,19 +341,7 @@ export default function StrategiesPage() {
         </h2>
         <p className="mb-6 text-xs text-white/40">{activeConfig?.desc}</p>
         {activeTab === 'valuebet' && <ValueBetCalculator />}
-        {activeTab === 'asian' && <AsianHandicapCalculator />}
         {activeTab === 'hedge' && <HedgeCalculator />}
-      </div>
-
-      {/* Educational note */}
-      <div className="glass-panel rounded-xl p-5 border border-white/8">
-        <h3 className="font-semibold text-white mb-3 text-sm">Wskazówki do zaawansowanych strategii</h3>
-        <ul className="space-y-2 text-xs text-white/50 list-disc list-inside">
-          <li>ValueBet wymaga dokładnej oceny prawdopodobieństwa – modele statystyczne pomagają.</li>
-          <li>Handicapy azjatyckie minimalizują ryzyko dzięki częściowym zwrotom stawki.</li>
-          <li>Kalkulator kontrowania jest przydatny gdy rynek zostaje zamknięty przez bukmachera.</li>
-          <li>Przed kontrą porównaj kursy u kilku bukmacherów – stawka zabezpieczająca może wypaść korzystniej niż u tego samego bukmachera.</li>
-        </ul>
       </div>
     </div>
   );

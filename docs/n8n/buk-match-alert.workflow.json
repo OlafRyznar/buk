@@ -1,0 +1,88 @@
+{
+  "name": "BukScan - Match Alert Email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "buk-match-alert",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "1f1f1f1f-0000-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "buk-match-alert"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json.body || $input.first().json;\n\nconst event = data.event || {};\nconst odds = Array.isArray(data.odds) ? data.odds : [];\n\n// --- flags -------------------------------------------------------------\nconst FLAGS = {\n  'polska': '🇵🇱', 'niemcy': '🇩🇪', 'francja': '🇫🇷', 'anglia': '🏴',\n  'hiszpania': '🇪🇸', 'portugalia': '🇵🇹', 'włochy': '🇮🇹', 'wlochy': '🇮🇹',\n  'holandia': '🇳🇱', 'belgia': '🇧🇪', 'chorwacja': '🇭🇷', 'szwajcaria': '🇨🇭',\n  'austria': '🇦🇹', 'dania': '🇩🇰', 'szwecja': '🇸🇪', 'norwegia': '🇳🇴',\n  'turcja': '🇹🇷', 'grecja': '🇬🇷', 'serbia': '🇷🇸', 'ukraina': '🇺🇦',\n  'rosja': '🇷🇺', 'czechy': '🇨🇿', 'słowacja': '🇸🇰', 'slowacja': '🇸🇰',\n  'rumunia': '🇷🇴', 'walia': '🏴', 'irlandia': '🇮🇪', 'szkocja': '🏴',\n  'islandia': '🇮🇸', 'finlandia': '🇫🇮', 'węgry': '🇭🇺', 'wegry': '🇭🇺',\n  'brazylia': '🇧🇷', 'argentyna': '🇦🇷', 'urugwaj': '🇺🇾', 'kolumbia': '🇨🇴',\n  'chile': '🇨🇱', 'peru': '🇵🇪', 'ekwador': '🇪🇨', 'meksyk': '🇲🇽',\n  'usa': '🇺🇸', 'stany zjednoczone': '🇺🇸', 'kanada': '🇨🇦',\n  'japonia': '🇯🇵', 'korea południowa': '🇰🇷', 'korea poludniowa': '🇰🇷',\n  'australia': '🇦🇺', 'maroko': '🇲🇦', 'senegal': '🇸🇳', 'nigeria': '🇳🇬',\n  'ghana': '🇬🇭', 'kamerun': '🇨🇲', 'tunezja': '🇹🇳', 'egipt': '🇪🇬',\n  'algieria': '🇩🇿', 'dr konga': '🇨🇩', 'wybrzeże kości słoniowej': '🇨🇮',\n  'wybrzeze kosci sloniowej': '🇨🇮', 'katar': '🇶🇦', 'arabia saudyjska': '🇸🇦',\n  'iran': '🇮🇷', 'chiny': '🇨🇳', 'indie': '🇮🇳', 'nowa zelandia': '🇳🇿',\n  'paragwaj': '🇵🇾', 'boliwia': '🇧🇴', 'wenezuela': '🇻🇪', 'panama': '🇵🇦',\n  'kostaryka': '🇨🇷', 'jamajka': '🇯🇲', 'jordania': '🇯🇴', 'uzbekistan': '🇺🇿',\n};\nconst flagFor = (name) => FLAGS[String(name || '').trim().toLowerCase()] || '⚽';\n\n// --- sport icon ----------------------------------------------------------\nconst sportKey = String(event.sportKey || event.sportTitle || '').toLowerCase();\nconst sportIcon = sportKey.includes('basketball') ? '🏀'\n  : sportKey.includes('tennis') ? '🎾'\n  : sportKey.includes('hockey') ? '🏒'\n  : sportKey.includes('mma') ? '🥊'\n  : sportKey.includes('baseball') ? '⚾'\n  : '⚽';\n\nconst kickoff = event.commenceTime ? new Date(event.commenceTime) : null;\nconst kickoffStr = kickoff\n  ? kickoff.toLocaleString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' })\n  : '—';\n\nconst sortedOdds = [...odds].sort((a, b) => b.price - a.price);\nconst topPrice = sortedOdds.length ? sortedOdds[0] : null;\n\nconst rows = sortedOdds\n  .map((o, i) => `\n    <tr style=\"background:${i === 0 ? 'rgba(16,185,129,.06)' : 'transparent'};\">\n      <td style=\"padding:13px 14px;border-bottom:1px solid #232733;color:#e5e7eb;font-size:14px;\">${o.outcome}</td>\n      <td style=\"padding:13px 14px;border-bottom:1px solid #232733;color:#9ca3af;font-size:13px;\">${o.bookmaker}</td>\n      <td style=\"padding:13px 14px;border-bottom:1px solid #232733;color:${i === 0 ? '#34d399' : '#d1d5db'};font-size:14px;font-weight:${i === 0 ? 800 : 600};text-align:right;\">${Number(o.price).toFixed(2)}${i === 0 ? ' 🥇' : ''}</td>\n      <td style=\"padding:13px 14px;border-bottom:1px solid #232733;text-align:right;\">${o.url ? `<a href=\"${o.url}\" target=\"_blank\" style=\"display:inline-block;padding:6px 14px;background:#10b981;color:#04130f;font-weight:700;font-size:12px;border-radius:8px;text-decoration:none;white-space:nowrap;\">Obstaw →</a>` : ''}</td>\n    </tr>`)\n  .join('');\n\nconst homeFlag = flagFor(event.homeTeam);\nconst awayFlag = flagFor(event.awayTeam);\n\nconst subject = `⚽ ${event.homeTeam} vs ${event.awayTeam} — najlepsze kursy`;\n\nconst html = `\n<div style=\"background:#05070a;padding:40px 16px;font-family:'Segoe UI',Arial,sans-serif;\">\n  <div style=\"max-width:600px;margin:0 auto;\">\n    <div style=\"background:linear-gradient(135deg,#0ea5e9 0%,#10b981 100%);border-radius:20px 20px 0 0;padding:26px 28px 22px;\">\n      <span style=\"background:rgba(4,19,15,.16);color:#04130f;font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:5px 11px;border-radius:999px;\">⚡ BukScan</span>\n      <table role=\"presentation\" style=\"width:100%;margin-top:18px;\">\n        <tr>\n          <td style=\"text-align:center;width:42%;\">\n            <div style=\"font-size:36px;line-height:1;\">${homeFlag}</div>\n            <div style=\"margin-top:8px;color:#04130f;font-weight:800;font-size:16px;\">${event.homeTeam}</div>\n          </td>\n          <td style=\"text-align:center;width:16%;color:#04130f;font-weight:900;font-size:12px;opacity:.65;\">VS</td>\n          <td style=\"text-align:center;width:42%;\">\n            <div style=\"font-size:36px;line-height:1;\">${awayFlag}</div>\n            <div style=\"margin-top:8px;color:#04130f;font-weight:800;font-size:16px;\">${event.awayTeam}</div>\n          </td>\n        </tr>\n      </table>\n    </div>\n    <div style=\"background:#11141b;border:1px solid #232733;border-top:none;border-radius:0 0 20px 20px;padding:24px 28px 28px;\">\n      <div style=\"text-align:center;margin-bottom:20px;\">\n        <p style=\"margin:0;color:#9ca3af;font-size:13px;\">${sportIcon} ${event.sportTitle || ''}</p>\n        <p style=\"margin:6px 0 0;color:#f3f4f6;font-size:16px;font-weight:700;text-transform:capitalize;\">🗓 ${kickoffStr}</p>\n      </div>\n      <table style=\"width:100%;border-collapse:collapse;background:#0c0f15;border-radius:12px;overflow:hidden;\">\n        <thead>\n          <tr>\n            <th style=\"text-align:left;padding:10px 14px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #232733;\">Wynik</th>\n            <th style=\"text-align:left;padding:10px 14px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #232733;\">Bukmacher</th>\n            <th style=\"text-align:right;padding:10px 14px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #232733;\">Kurs</th>\n            <th style=\"text-align:right;padding:10px 14px;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #232733;\"></th>\n          </tr>\n        </thead>\n        <tbody>${rows}</tbody>\n      </table>\n      ${topPrice ? `\n      <div style=\"margin-top:18px;padding:13px 16px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:12px;\">\n        <p style=\"margin:0;color:#6ee7b7;font-size:12px;\">🥇 Najwyższy kurs: <strong>${topPrice.outcome}</strong> u <strong>${topPrice.bookmaker}</strong> &mdash; <strong>${Number(topPrice.price).toFixed(2)}</strong></p>\n      </div>` : ''}\n      <p style=\"margin:22px 0 0;color:#4b5563;font-size:11px;text-align:center;\">Automatyczny alert ⚡ BukScan</p>\n    </div>\n  </div>\n</div>`;\n\nreturn [{ json: { toEmail: data.email, subject, html } }];"
+      },
+      "id": "2f2f2f2f-0000-4000-8000-000000000002",
+      "name": "Build email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{$json.toEmail}}",
+        "subject": "={{$json.subject}}",
+        "emailType": "html",
+        "message": "={{$json.html}}",
+        "options": {}
+      },
+      "id": "3ffff-0000-4000-8000-00000000000f",
+      "name": "Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        680,
+        300
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build email": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

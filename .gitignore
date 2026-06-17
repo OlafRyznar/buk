@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# runtime notification state (contains user email, generated at runtime)
+/src/lib/notify-settings.json
+/src/lib/notified-events.json
+/src/lib/event-alerts.json
+
 # vercel
 .vercel
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BookmakerMarginStats } from "@/lib/data-service";
-import { BOOKMAKER_LOGOS } from "@/lib/types";
+import BookmakerIcon from "./BookmakerIcon";
 
 type MarketFilter = "all" | "soccer" | "worldCup" | "basketball";
 
@@ -107,7 +107,7 @@ export default function MarginsTable({ stats }: { stats: BookmakerMarginStats[] 
                 {idx === 0 ? "Najniższa marża" : `Miejsce ${idx + 1}`}
               </p>
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-base">{BOOKMAKER_LOGOS[bm.key] ?? "⚪"}</span>
+                <BookmakerIcon bookmakerKey={bm.key} size={20} />
                 <p className="truncate text-base font-semibold text-white">{bm.title}</p>
               </div>
               <p className={`mt-2 font-mono text-2xl font-bold tabular-nums ${tone.text}`}>
@@ -131,7 +131,7 @@ export default function MarginsTable({ stats }: { stats: BookmakerMarginStats[] 
                   <span className="font-mono text-xs text-white/30">
                     {String(idx + 1).padStart(2, "0")}
                   </span>
-                  <span>{BOOKMAKER_LOGOS[bm.key] ?? "⚪"}</span>
+                  <BookmakerIcon bookmakerKey={bm.key} size={16} />
                   <p className="truncate text-sm font-semibold text-white">{bm.title}</p>
                 </div>
                 <MarginBar value={bm.activeMargin} />
@@ -193,7 +193,7 @@ export default function MarginsTable({ stats }: { stats: BookmakerMarginStats[] 
                 </td>
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-2.5">
-                    <span>{BOOKMAKER_LOGOS[bm.key] ?? "⚪"}</span>
+                    <BookmakerIcon bookmakerKey={bm.key} size={18} />
                     <span className="font-semibold text-white">{bm.title}</span>
                     <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
                       PL

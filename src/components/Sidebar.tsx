@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useApp } from "@/components/AppProvider";
+import { createClient } from "@/lib/supabase/client";
+import BrandLogo from "@/components/BrandLogo";
 
 const navItems = [
   {
@@ -61,31 +63,12 @@ const navItems = [
     ),
   },
   {
-    href: "/journal",
-    label: "Dziennik",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    ),
-  },
-  {
-    href: "/notifications",
-    label: "Powiadomienia",
+    href: "/account",
+    label: "Konto",
     badge: true,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-      </svg>
-    ),
-  },
-  {
-    href: "/settings",
-    label: "Ustawienia",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
     ),
   },
@@ -95,7 +78,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const { unreadCount, settings } = useApp();
+  const { unreadCount } = useApp();
 
   const [syncInfo, setSyncInfo] = useState<{
     isSyncing: boolean;
@@ -109,6 +92,12 @@ export default function Sidebar() {
     hasData: false
   });
   const [localSyncing, setLocalSyncing] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+  }, []);
 
   const fetchSyncStatus = async () => {
     try {
@@ -222,6 +211,32 @@ export default function Sidebar() {
     );
   };
 
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
+
+  const renderUserBlock = () => {
+    if (!userEmail) return null;
+    return (
+      <div className="flex items-center justify-between gap-2 rounded-xl border border-white/8 bg-transparent p-3 text-xs">
+        <div className="min-w-0">
+          <p className="text-white/40">Zalogowano jako</p>
+          <p className="truncate font-medium text-white/85">{userEmail}</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="shrink-0 rounded-lg border border-white/15 bg-white/8 px-2.5 py-1.5 font-medium text-white/70 transition hover:bg-white/12 hover:text-white"
+        >
+          Wyloguj
+        </button>
+      </div>
+    );
+  };
+
   const renderNav = (mobile = false) => (
     <nav className="space-y-1.5">
       {navItems.map((item) => {
@@ -266,9 +281,7 @@ export default function Sidebar() {
       <div className="fixed inset-x-0 top-0 z-50 px-3 pt-3 lg:hidden">
         <div className="soft-panel flex items-center justify-between rounded-lg border border-white/12 px-3 py-2.5">
           <Link href="/" className="flex items-center gap-3" onClick={() => setIsOpen(false)}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-cyan-600 text-xs font-bold text-white shadow-[0_4px_14px_-4px_rgba(56,189,248,0.6)]">
-              B
-            </div>
+            <BrandLogo size={32} />
             <div>
               <h1 className="text-sm font-semibold text-white">BukScan</h1>
               <p className="text-[10px] text-white/50">panel arbitrażu</p>
@@ -308,19 +321,10 @@ export default function Sidebar() {
               </button>
             </div>
             {renderNav(true)}
-            
-            <div className="mt-4">
-              {renderSyncBlock()}
-            </div>
 
-            <div className="mt-4 rounded-lg border border-white/12 bg-white/6 p-3">
-              <div className="flex items-center gap-2 text-sm text-white/86">
-                <span className="h-2 w-2 rounded-full bg-amber-300" />
-                Tryb demo: {settings.virtualBalance.toLocaleString("pl-PL")} zł
-              </div>
-              <p className="mt-1 text-xs leading-5 text-white/62">
-                Dodaj ODDS_API_KEY w .env.local lub przejdź na Premium.
-              </p>
+            <div className="mt-4 space-y-3">
+              {renderUserBlock()}
+              {renderSyncBlock()}
             </div>
           </div>
         </div>
@@ -330,9 +334,7 @@ export default function Sidebar() {
         <div className="flex h-full flex-col p-6">
           <div className="border-b border-white/8 pb-4">
             <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-cyan-600 text-xs font-bold text-white shadow-[0_4px_14px_-4px_rgba(56,189,248,0.6)]">
-                B
-              </div>
+              <BrandLogo size={32} />
               <div>
                 <h1 className="text-base font-semibold text-white">BukScan</h1>
                 <p className="text-[11px] text-white/50">panel arbitrażu</p>
@@ -343,26 +345,8 @@ export default function Sidebar() {
           <div className="flex-1 overflow-y-auto py-5">{renderNav()}</div>
 
           <div className="space-y-3 border-t border-white/8 pt-5">
+            {renderUserBlock()}
             {renderSyncBlock()}
-
-            <div className="rounded-xl border border-white/8 bg-transparent p-3 text-xs">
-              <div className="flex items-center gap-2 font-medium text-white/85">
-                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                Tryb demo
-              </div>
-              <p className="mt-1 text-white/50 font-medium">
-                Saldo:{" "}
-                <span className="font-mono text-white">
-                  {settings.virtualBalance.toLocaleString("pl-PL")} zł
-                </span>
-              </p>
-              <Link
-                href="/settings"
-                className="mt-2 inline-flex items-center gap-1 font-semibold text-sky-400 hover:text-sky-300 transition"
-              >
-                Przejdź na Premium &rarr;
-              </Link>
-            </div>
           </div>
         </div>
       </aside>

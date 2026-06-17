@@ -1,6 +1,6 @@
 import MarginsTable from "@/components/MarginsTable";
 import { getBookmakerMargins } from "@/lib/data-service";
-import { BOOKMAKER_LOGOS } from "@/lib/types";
+import BookmakerIcon from "@/components/BookmakerIcon";
 
 // Przykładowe promocje, jakie pojawiały się / mogą pojawiać się u danego
 // bukmachera — materiał poglądowy, nie aktualna oferta.
@@ -145,7 +145,7 @@ export default async function MarginsPage() {
               className="card-hover rounded-lg border border-white/10 bg-white/[0.03] p-4"
             >
               <p className="flex items-center gap-2 text-sm font-semibold text-white">
-                <span>{BOOKMAKER_LOGOS[bm.key] ?? "⚪"}</span>
+                <BookmakerIcon bookmakerKey={bm.key} size={18} />
                 {bm.name}
               </p>
               <ul className="mt-2.5 space-y-1.5">

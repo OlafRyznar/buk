@@ -15,6 +15,24 @@ import path from 'path';
 
 const USE_DEMO = !process.env.ODDS_API_KEY;
 
+// A single bookmaker's odds can't be compared or arbitraged against
+// anything — events covered by only one source are noise, not opportunities.
+const MIN_BOOKMAKERS_PER_EVENT = 2;
+
+function countDistinctBookmakers(event: EventWithOdds): number {
+  const keys = new Set<string>();
+  for (const market of event.markets) {
+    for (const outcome of market.outcomes) {
+      for (const bm of outcome.bookmakers) keys.add(bm.bookmakerKey);
+    }
+  }
+  return keys.size;
+}
+
+function filterCoveredEvents(events: EventWithOdds[]): EventWithOdds[] {
+  return events.filter((e) => countDistinctBookmakers(e) >= MIN_BOOKMAKERS_PER_EVENT);
+}
+
 export async function getAllEvents(): Promise<EventWithOdds[]> {
   if (USE_DEMO) {
     try {
@@ -24,7 +42,7 @@ export async function getAllEvents(): Promise<EventWithOdds[]> {
         const scrapedEvents = JSON.parse(fileContent);
         if (Array.isArray(scrapedEvents) && scrapedEvents.length > 0) {
           console.log(`[DataService] Loading ${scrapedEvents.length} events from scraped-data.json`);
-          return scrapedEvents.map(transformToEventWithOdds);
+          return filterCoveredEvents(scrapedEvents.map(transformToEventWithOdds));
         }
       }
     } catch (e) {
@@ -32,12 +50,12 @@ export async function getAllEvents(): Promise<EventWithOdds[]> {
     }
 
     const demoEvents = getDemoEvents();
-    return demoEvents.map(transformToEventWithOdds);
+    return filterCoveredEvents(demoEvents.map(transformToEventWithOdds));
   }
 
   const sportKeys = SUPPORTED_SPORTS.map((s) => s.key);
   const apiEvents = await fetchOddsForMultipleSports(sportKeys);
-  return transformEvents(apiEvents);
+  return filterCoveredEvents(transformEvents(apiEvents));
 }
 
 export async function getArbitrageOpportunities(

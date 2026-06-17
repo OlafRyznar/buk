@@ -66,7 +66,7 @@ export default function PremiumModal({ isOpen, onClose, featureName }: PremiumMo
             </p>
           </div>
           <Link
-            href="/settings"
+            href="/account"
             onClick={onClose}
             className="rounded-2xl bg-emerald-500 px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-emerald-400"
           >

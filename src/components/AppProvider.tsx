@@ -7,10 +7,16 @@ import {
   BookmakerBalance,
   DEFAULT_BALANCES,
   JournalEntry,
-  DEMO_JOURNAL_ENTRIES,
   AppNotification,
   DEMO_NOTIFICATIONS,
 } from "@/lib/store-types";
+import { createClient } from "@/lib/supabase/client";
+import {
+  fetchJournal,
+  insertJournalEntry,
+  updateJournalEntryRow,
+  deleteJournalEntryRow,
+} from "@/lib/journal-service";
 
 interface AppContextValue {
   settings: UserSettings;
@@ -63,22 +69,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [journal, setJournal] = useState<JournalEntry[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Initialize from storage once — runs only on the client, after hydration
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSettings(loadFromStorage("bukscan:settings", DEFAULT_SETTINGS));
     setBookmakerBalances(loadFromStorage("bukscan:balances", DEFAULT_BALANCES));
-    setJournal(loadFromStorage("bukscan:journal", DEMO_JOURNAL_ENTRIES));
     setNotifications(loadFromStorage("bukscan:notifications", DEMO_NOTIFICATIONS));
     setWatchlist(loadFromStorage("bukscan:watchlist", []));
     setIsLoaded(true);
   }, []);
 
+  // Email alerts always go to the logged-in account, never a freely typed
+  // address — keep settings.notificationEmail mirroring the auth session.
+  // The journal lives in Supabase, scoped to this user id, instead of
+  // localStorage — it needs to follow the account across devices.
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      const email = data.user?.email;
+      if (email) setSettings((prev) => (prev.notificationEmail === email ? prev : { ...prev, notificationEmail: email }));
+      if (data.user?.id) setUserId(data.user.id);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createClient();
+    fetchJournal(supabase, userId).then(setJournal);
+  }, [userId]);
+
   // Persist to localStorage on every change
   useEffect(() => { if (isLoaded) saveToStorage("bukscan:settings", settings); }, [settings, isLoaded]);
   useEffect(() => { if (isLoaded) saveToStorage("bukscan:balances", bookmakerBalances); }, [bookmakerBalances, isLoaded]);
-  useEffect(() => { if (isLoaded) saveToStorage("bukscan:journal", journal); }, [journal, isLoaded]);
   useEffect(() => { if (isLoaded) saveToStorage("bukscan:notifications", notifications); }, [notifications, isLoaded]);
   useEffect(() => { if (isLoaded) saveToStorage("bukscan:watchlist", watchlist); }, [watchlist, isLoaded]);
 
@@ -93,20 +117,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addJournalEntry = useCallback((entry: Omit<JournalEntry, "id" | "createdAt">) => {
-    const newEntry: JournalEntry = {
-      ...entry,
-      id: `j-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    setJournal(prev => [newEntry, ...prev]);
-  }, []);
+    if (!userId) return;
+    const supabase = createClient();
+    insertJournalEntry(supabase, userId, entry).then((saved) => {
+      if (saved) setJournal(prev => [saved, ...prev]);
+    });
+  }, [userId]);
 
   const updateJournalEntry = useCallback((id: string, updates: Partial<JournalEntry>) => {
     setJournal(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    const supabase = createClient();
+    updateJournalEntryRow(supabase, id, updates);
   }, []);
 
   const deleteJournalEntry = useCallback((id: string) => {
     setJournal(prev => prev.filter(e => e.id !== id));
+    const supabase = createClient();
+    deleteJournalEntryRow(supabase, id);
   }, []);
 
   const addNotification = useCallback((notif: Omit<AppNotification, "id" | "timestamp">) => {

@@ -1,9 +1,11 @@
 import { getEventById } from "@/lib/data-service";
 import { findArbitrageForEvent, impliedProbability } from "@/lib/arbitrage";
-import { BOOKMAKER_LOGOS } from "@/lib/types";
+import { ALL_BOOKMAKERS } from "@/lib/store-types";
 import ArbitrageCard from "@/components/ArbitrageCard";
 import TeamFlag from "@/components/TeamFlag";
 import WatchlistButton from "@/components/WatchlistButton";
+import EventAlertButton from "@/components/EventAlertButton";
+import BookmakerLink from "@/components/BookmakerLink";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -25,15 +27,29 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   const arbitrages = findArbitrageForEvent(event, 1000);
   const h2hMarket = event.markets.find((m) => m.marketKey === "h2h");
+  interface BookmakerRow {
+    odds: Record<string, number>;
+    bookmakerKey: string;
+    url: string;
+  }
   const bookmakerRows = h2hMarket
     ? (() => {
-        const bookmakers = new Map<string, Record<string, number>>();
+        const bookmakers = new Map<string, BookmakerRow>();
         for (const outcome of h2hMarket.outcomes) {
           for (const bm of outcome.bookmakers) {
             if (!bookmakers.has(bm.bookmaker)) {
-              bookmakers.set(bm.bookmaker, {});
+              const bmInfo = ALL_BOOKMAKERS.find((b) => b.key === bm.bookmakerKey);
+              bookmakers.set(bm.bookmaker, {
+                odds: {},
+                bookmakerKey: bm.bookmakerKey,
+                url: bm.eventUrl ?? bmInfo?.url ?? "#",
+              });
             }
-            bookmakers.get(bm.bookmaker)![outcome.name] = bm.odds;
+            const row = bookmakers.get(bm.bookmaker)!;
+            row.odds[outcome.name] = bm.odds;
+            // Prefer a direct match link over the bookmaker homepage as soon
+            // as one outcome's row provides it.
+            if (bm.eventUrl) row.url = bm.eventUrl;
           }
         }
 
@@ -61,6 +77,14 @@ export default async function EventDetailPage({ params }: PageProps) {
                 {event.sportTitle}
               </span>
               <WatchlistButton eventId={event.id} />
+              {h2hMarket && (
+                <EventAlertButton
+                  eventId={event.id}
+                  eventName={`${event.homeTeam} vs ${event.awayTeam}`}
+                  sportTitle={event.sportTitle}
+                  outcomes={h2hMarket.outcomes.map(o => o.name)}
+                />
+              )}
             </div>
             <h1 className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xl font-bold text-white sm:text-3xl">
               <TeamFlag team={event.homeTeam} size={30} />
@@ -108,15 +132,19 @@ export default async function EventDetailPage({ params }: PageProps) {
           </h2>
           <div className="glass-panel overflow-hidden rounded-xl">
             <div className="space-y-3 p-4 md:hidden">
-              {bookmakerRows.map(([name, odds]) => (
+              {bookmakerRows.map(([name, row]) => (
                 <div key={name} className="py-3 border-b border-white/5 last:border-0">
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="text-xs">{BOOKMAKER_LOGOS[name.toLowerCase().replace(/\s/g, '')] || '📊'}</span>
-                    <span className="text-xs font-bold text-white">{name}</span>
+                  <div className="mb-2">
+                    <BookmakerLink
+                      name={name}
+                      url={row.url}
+                      bookmakerKey={row.bookmakerKey}
+                      className="text-xs font-bold text-white"
+                    />
                   </div>
                   <div className="grid grid-cols-1 gap-2">
                     {h2hMarket.outcomes.map((o) => {
-                      const oddVal = odds[o.name];
+                      const oddVal = row.odds[o.name];
                       const isMax = o.bestOdds.bookmaker === name;
                       return (
                         <div key={o.name} className="flex items-center justify-between py-1.5 text-xs text-white/50">
@@ -176,17 +204,19 @@ export default async function EventDetailPage({ params }: PageProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {bookmakerRows.map(([name, odds]) => (
+                  {bookmakerRows.map(([name, row]) => (
                     <tr key={name} className="border-b border-white/5 transition-colors hover:bg-white/[0.02] last:border-0">
                       <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs">{BOOKMAKER_LOGOS[name.toLowerCase().replace(/\s/g, '')] || '📊'}</span>
-                          <span className="text-white font-medium text-sm">{name}</span>
-                        </div>
+                        <BookmakerLink
+                          name={name}
+                          url={row.url}
+                          bookmakerKey={row.bookmakerKey}
+                          className="text-white font-medium text-sm"
+                        />
                       </td>
                       {h2hMarket.outcomes.map((o) => {
                         const isMax = o.bestOdds.bookmaker === name;
-                        const oddVal = odds[o.name];
+                        const oddVal = row.odds[o.name];
                         return (
                           <td key={o.name} className="p-4 text-center">
                             {oddVal ? (

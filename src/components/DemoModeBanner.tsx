@@ -20,7 +20,7 @@ export default function DemoModeBanner() {
           </span>
         </div>
         <Link
-          href="/settings"
+          href="/account"
           className="w-full whitespace-nowrap rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-center font-medium text-amber-200 transition hover:bg-amber-500/20 sm:w-auto text-xs"
         >
           Aktywuj Premium

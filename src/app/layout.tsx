@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Manrope, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
 import { AppProvider } from "@/components/AppProvider";
-import DemoModeBanner from "@/components/DemoModeBanner";
-import BackgroundSlider from "@/components/BackgroundSlider";
+import AppShell from "@/components/AppShell";
 
 const sansFont = Manrope({
   variable: "--font-manrope",
@@ -40,18 +38,7 @@ export default function RootLayout({
         className={`${sansFont.variable} ${displayFont.variable} ${monoFont.variable} antialiased`}
       >
         <AppProvider>
-          <div className="relative min-h-screen">
-            <BackgroundSlider />
-            <div className="relative flex min-h-screen">
-              <Sidebar />
-              <main className="flex-1 lg:ml-[280px]">
-                <DemoModeBanner />
-                <div className="w-full px-3 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-[5.2rem] sm:px-6 lg:px-12 lg:pt-7">
-                  {children}
-                </div>
-              </main>
-            </div>
-          </div>
+          <AppShell>{children}</AppShell>
         </AppProvider>
       </body>
     </html>

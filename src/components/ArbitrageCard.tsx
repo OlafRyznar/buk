@@ -6,6 +6,7 @@ import { profitCategory, recomputeStakesWithTax, DEFAULT_TAX_FREE_KEYS } from "@
 import { ALL_BOOKMAKERS, TAX_FREE_BOOKMAKER_KEYS } from "@/lib/store-types";
 import { useApp } from "@/components/AppProvider";
 import { RedirectWarningModal } from "./RedirectWarningModal";
+import BookmakerIcon from "./BookmakerIcon";
 import TeamFlag from "./TeamFlag";
 import Link from "next/link";
 
@@ -126,7 +127,10 @@ export default function ArbitrageCard({
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1.5 flex-wrap">
                   <span className="text-sm font-semibold text-white">{bet.outcome}</span>
-                  <span className="text-[10px] text-white/40">{bet.bookmaker}</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] text-white/40">
+                    <BookmakerIcon bookmakerKey={bet.bookmakerKey} size={12} />
+                    {bet.bookmaker}
+                  </span>
                 </div>
                 <div className="mt-0.5 text-xs text-white/50">
                   Stawka: <span className="font-mono text-white/70 font-medium">{bet.stake.toFixed(0)} zł</span> · Wygrana: <span className="font-mono text-emerald-400 font-medium">{bet.potentialReturn.toFixed(0)} zł</span>
@@ -138,7 +142,7 @@ export default function ArbitrageCard({
                   onClick={() =>
                     setRedirectModal({
                       bookmakerName: bet.bookmaker,
-                      url: bmInfo?.url ?? "#",
+                      url: bet.eventUrl ?? bmInfo?.url ?? "#",
                     })
                   }
                   className="rounded-lg bg-white/5 border border-white/[0.04] px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-white/10"
@@ -174,7 +178,12 @@ export default function ArbitrageCard({
               return (
                 <tr key={idx} className="border-b border-white/6 last:border-0">
                   <td className="p-3 text-white font-medium">{bet.outcome}</td>
-                  <td className="p-3 text-white/75">{bet.bookmaker}</td>
+                  <td className="p-3 text-white/75">
+                    <span className="inline-flex items-center gap-2">
+                      <BookmakerIcon bookmakerKey={bet.bookmakerKey} size={16} />
+                      {bet.bookmaker}
+                    </span>
+                  </td>
                   <td className="p-3 text-right font-mono text-amber-200">
                     {bet.odds.toFixed(2)}
                   </td>

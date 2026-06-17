@@ -31,8 +31,13 @@ export async function generateStaticParams() {
 }
 `;
 
-const apiDir = path.join(root, 'src', 'app', 'api');
-const apiBackup = path.join(root, '.static-api-backup');
+// Route Handlers can't be statically exported unless they opt into
+// force-static — easier to just hide them from the build like the API dir.
+// `auth/callback` is the Supabase OAuth callback; add any future ones here.
+const ROUTE_DIRS_TO_HIDE = [
+  { dir: path.join(root, 'src', 'app', 'api'), backup: path.join(root, '.static-api-backup') },
+  { dir: path.join(root, 'src', 'app', 'auth'), backup: path.join(root, '.static-auth-backup') },
+];
 const fileBackups = new Map();
 
 function patch() {
@@ -45,9 +50,11 @@ function patch() {
     if (rel.includes('[id]')) patched += STATIC_PARAMS_BLOCK;
     fs.writeFileSync(file, patched, 'utf-8');
   }
-  if (fs.existsSync(apiDir)) fs.renameSync(apiDir, apiBackup);
+  for (const { dir, backup } of ROUTE_DIRS_TO_HIDE) {
+    if (fs.existsSync(dir)) fs.renameSync(dir, backup);
+  }
 
-  // Stale generated route types still reference the hidden API folder —
+  // Stale generated route types still reference the hidden folders —
   // drop them, Next regenerates them on the next dev/build run.
   for (const rel of ['.next/types/validator.ts', '.next/dev/types/validator.ts']) {
     const file = path.join(root, rel);
@@ -57,9 +64,11 @@ function patch() {
 
 function restore() {
   for (const [file, content] of fileBackups) fs.writeFileSync(file, content, 'utf-8');
-  if (fs.existsSync(apiBackup)) {
-    if (fs.existsSync(apiDir)) fs.rmSync(apiDir, { recursive: true, force: true });
-    fs.renameSync(apiBackup, apiDir);
+  for (const { dir, backup } of ROUTE_DIRS_TO_HIDE) {
+    if (fs.existsSync(backup)) {
+      if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
+      fs.renameSync(backup, dir);
+    }
   }
 }
 

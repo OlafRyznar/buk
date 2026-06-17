@@ -7,6 +7,10 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+
+  const { startMatchAlertScheduler } = await import('./instrumentation-node');
+  startMatchAlertScheduler();
+
   if (process.env.NODE_ENV !== 'production' && process.env.AUTO_SCRAPE !== '1') return;
 
   const { startAutoScrape } = await import('./instrumentation-node');

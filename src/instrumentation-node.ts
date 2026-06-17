@@ -54,3 +54,23 @@ export function startAutoScrape() {
   setInterval(scrapeAndSave, intervalMs);
   console.log(`[AutoScrape] Scheduled: every ${intervalMin} min.`);
 }
+
+const matchAlertFlags = globalThis as unknown as { __bukMatchAlerts?: boolean };
+
+export function startMatchAlertScheduler() {
+  if (matchAlertFlags.__bukMatchAlerts) return; // only one scheduler per process
+  matchAlertFlags.__bukMatchAlerts = true;
+
+  const tick = async () => {
+    try {
+      const { checkAndSendMatchAlerts, checkAndSendEventAlerts } = await import('./lib/match-alerts');
+      await checkAndSendMatchAlerts();
+      await checkAndSendEventAlerts();
+    } catch (err) {
+      console.error('[MatchAlerts] Failed:', err);
+    }
+  };
+
+  setInterval(tick, 60 * 1000);
+  console.log('[MatchAlerts] Scheduled: checking every 1 min.');
+}

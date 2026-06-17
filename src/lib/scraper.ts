@@ -14,6 +14,10 @@ interface ScrapedEventRaw {
   away: string;
   commenceTimeStr: string;
   odds: RawOdds;
+  // Only set when the matched row element is itself a real <a href> on the
+  // page — never guessed from a nested selector, so a wrong link can't sneak
+  // in. Falls back to the bookmaker's homepage when absent.
+  eventUrl?: string;
 }
 
 interface BookmakerResult {
@@ -100,6 +104,12 @@ const NAME_ALIASES: Record<string, string> = {
   wks: 'wybrzeze kosci sloniowej',
   bosnia: 'bosnia i hercegowina',
   'republika poludniowej afryki': 'rpa',
+  // Different bookmakers quote DR Congo in different grammatical forms —
+  // "DR Kongo" (nominative) vs "DR Konga" (genitive, from "Demokratyczna
+  // Republika Konga") — without this they cluster as two separate teams.
+  'dr kongo': 'dr konga',
+  'demokratyczna republika konga': 'dr konga',
+  'demokratyczna republika kongo': 'dr konga',
 };
 
 // Token-level abbreviations (Korea Płd. -> Korea Południowa etc.)
@@ -359,7 +369,16 @@ function extractGenericRows(args: { selectors: string[]; twoWay: boolean }): Scr
     if (seen.has(key)) continue;
     seen.add(key);
 
-    out.push({ home, away, commenceTimeStr, odds: { home: h, draw: d, away: a } });
+    // Only trust the row itself being a real <a href="..."> element — using
+    // `.href` (not getAttribute) so the browser resolves it to an absolute
+    // URL. Never dig into children to guess which nested link is "the" match
+    // link; a wrong guess would send the user to the wrong page.
+    const eventUrl =
+      row.tagName === 'A' && (row as HTMLAnchorElement).href
+        ? (row as HTMLAnchorElement).href
+        : undefined;
+
+    out.push({ home, away, commenceTimeStr, odds: { home: h, draw: d, away: a }, eventUrl });
   }
 
   return out;
@@ -376,7 +395,12 @@ function extractWynikMeczu(args: {
   twoWay: boolean;
 }): ScrapedEventRaw[] {
   const { selectors, twoWay } = args;
-  const headerRe = twoWay ? /^zwyci[ęe]zca( meczu)?/im : /^wynik meczu$/im;
+  // Fortuna basketball cards label the true 2-way (incl. overtime) market
+  // "Mecz: zwycięzca (z dogrywką)" — not anchored at line start like the
+  // soccer "Wynik meczu" header, so this can't use `^`. The same card also
+  // has a "Wynik meczu" 3-way market (regulation-time draw) we deliberately
+  // skip for basketball: it wouldn't match other bookmakers' true moneylines.
+  const headerRe = twoWay ? /zwyci[ęe]zca/i : /^wynik meczu$/im;
 
   let cards: Element[] = [];
   for (const sel of selectors) {
@@ -765,7 +789,7 @@ function mergeResults(results: BookmakerResult[]): OddsApiEvent[] {
     sport: SportKind;
     commenceTimeStr: string;
     commenceMs: number | null; // only set when the source had a real clock
-    books: { key: string; title: string; odds: RawOdds }[];
+    books: { key: string; title: string; odds: RawOdds; eventUrl?: string }[];
   }
 
   const clusters: Cluster[] = [];
@@ -801,7 +825,7 @@ function mergeResults(results: BookmakerResult[]): OddsApiEvent[] {
           const odds = reversed
             ? { home: ev.odds.away, draw: ev.odds.draw, away: ev.odds.home }
             : ev.odds;
-          cluster.books.push({ key: result.key, title: result.title, odds });
+          cluster.books.push({ key: result.key, title: result.title, odds, eventUrl: ev.eventUrl });
           if (!cluster.commenceTimeStr && ev.commenceTimeStr) {
             cluster.commenceTimeStr = ev.commenceTimeStr;
             cluster.commenceMs = evMs;
@@ -818,9 +842,39 @@ function mergeResults(results: BookmakerResult[]): OddsApiEvent[] {
           sport: result.sport,
           commenceTimeStr: ev.commenceTimeStr,
           commenceMs: evMs,
-          books: [{ key: result.key, title: result.title, odds: ev.odds }],
+          books: [{ key: result.key, title: result.title, odds: ev.odds, eventUrl: ev.eventUrl }],
         });
       }
+    }
+  }
+
+  // The loop above splits same-named clusters apart when their parsed
+  // kickoff times differ by more than MAX_KICKOFF_DIFF_MS — usually because
+  // one site's date text ("dziś"/"jutro"/missing year) parses slightly off,
+  // not because it's actually a different fixture. A final pass that merges
+  // by team name alone (ignoring time) cleans up the leftover splits.
+  const coalesced: Cluster[] = [];
+  for (const cluster of clusters) {
+    const existing = coalesced.find((c) => {
+      if (c.sport !== cluster.sport) return false;
+      const direct = matchTeams(c.home, cluster.home) && matchTeams(c.away, cluster.away);
+      const reversed =
+        !direct && matchTeams(c.home, cluster.away) && matchTeams(c.away, cluster.home);
+      return direct || reversed;
+    });
+
+    if (!existing) {
+      coalesced.push(cluster);
+      continue;
+    }
+    for (const book of cluster.books) {
+      if (!existing.books.some((b) => b.key === book.key)) {
+        existing.books.push(book);
+      }
+    }
+    if (!existing.commenceTimeStr && cluster.commenceTimeStr) {
+      existing.commenceTimeStr = cluster.commenceTimeStr;
+      existing.commenceMs = cluster.commenceMs;
     }
   }
 
@@ -829,7 +883,7 @@ function mergeResults(results: BookmakerResult[]): OddsApiEvent[] {
     normalizeName(name).replace(/\s+/g, '-').substring(0, 40) || 'x';
   const usedIds = new Set<string>();
 
-  return clusters.map((cluster) => {
+  return coalesced.map((cluster) => {
     let sportKey = 'basketball';
     let sportTitle = 'Koszykówka';
     if (cluster.sport === 'soccer') {
@@ -860,6 +914,7 @@ function mergeResults(results: BookmakerResult[]): OddsApiEvent[] {
           title: book.title,
           last_update: nowStr,
           markets: [{ key: 'h2h', last_update: nowStr, outcomes }],
+          event_url: book.eventUrl,
         };
       }),
     };

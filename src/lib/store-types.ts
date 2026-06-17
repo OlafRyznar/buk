@@ -28,6 +28,26 @@ export const ALL_BOOKMAKERS = [
 
 export type BookmakerKey = typeof ALL_BOOKMAKERS[number]['key'];
 
+/**
+ * Real favicon for a bookmaker's site, fetched through Google's public
+ * favicon proxy (no scraping/storage needed — same idea as flagcdn.com for
+ * TeamFlag). `size` is the rendered px size; the request asks for 2x that so
+ * it stays crisp.
+ */
+export function getBookmakerIconUrl(bookmakerKey: string, size = 32): string | null {
+  const normalized = bookmakerKey?.toLowerCase().replace(/\s+/g, "") ?? "";
+  const bm = ALL_BOOKMAKERS.find(
+    (b) => b.key === normalized || b.name.toLowerCase().replace(/\s+/g, "") === normalized
+  );
+  if (!bm) return null;
+  try {
+    const domain = new URL(bm.url).hostname;
+    return `https://www.google.com/s2/favicons?sz=${size * 2}&domain=${domain}`;
+  } catch {
+    return null;
+  }
+}
+
 // Bookmakers that offer a tax-free game mode (no 12% tax on winnings).
 // Confirmed: Betclic. STS and others charge the standard tax — extend this
 // list as more tax-free modes are confirmed.
@@ -46,6 +66,9 @@ export interface UserSettings {
   isPremium: boolean;
   virtualBalance: number;
   darkMode: boolean;
+  notificationEmail: string; // where to send e-mail alerts (via n8n)
+  emailAlertsEnabled: boolean;
+  emailAlertMinutesBefore: number; // send the "match starting soon" e-mail this many minutes before kickoff
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -58,9 +81,12 @@ export const DEFAULT_SETTINGS: UserSettings = {
   excludeNicheMarkets: false,
   mainMarketsOnly: false,
   taxRate: 12,
-  isPremium: false,
+  isPremium: true,
   virtualBalance: 10000,
   darkMode: true,
+  notificationEmail: '',
+  emailAlertsEnabled: false,
+  emailAlertMinutesBefore: 30,
 };
 
 export interface BookmakerBalance {
@@ -108,69 +134,6 @@ export interface JournalEntry {
   arbitrageId?: string;
   isDemo?: boolean;
 }
-
-export const DEMO_JOURNAL_ENTRIES: JournalEntry[] = [
-  {
-    id: 'j-001',
-    createdAt: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
-    eventName: 'Real Madrid vs Barcelona',
-    sportTitle: 'La Liga',
-    commenceTime: new Date(Date.now() - 6 * 24 * 3600 * 1000).toISOString(),
-    marketKey: 'h2h',
-    bets: [
-      { bookmaker: 'Pinnacle', bookmakerKey: 'pinnacle', outcome: 'Real Madrid', odds: 2.45, stake: 367.65, potentialReturn: 901.24, result: 'win' },
-      { bookmaker: 'Bet365', bookmakerKey: 'bet365', outcome: 'Draw', odds: 3.55, stake: 253.51, potentialReturn: 900.0, result: 'loss' },
-      { bookmaker: 'Unibet', bookmakerKey: 'unibet', outcome: 'Barcelona', odds: 2.90, stake: 310.34, potentialReturn: 900.0, result: 'loss' },
-    ],
-    totalStake: 931.5,
-    guaranteedReturn: 900.0,
-    profit: -31.5,
-    profitPercent: -3.38,
-    status: 'lost',
-    notes: 'Surebet rozliczony. Real Madrid wygrał, ale arbitraż był źle obliczony.',
-    isDemo: true,
-  },
-  {
-    id: 'j-002',
-    createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
-    eventName: 'Arsenal vs Chelsea',
-    sportTitle: 'EPL',
-    commenceTime: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
-    marketKey: 'h2h',
-    bets: [
-      { bookmaker: 'Unibet', bookmakerKey: 'unibet', outcome: 'Arsenal', odds: 2.25, stake: 444.44, potentialReturn: 1000.0, result: 'loss' },
-      { bookmaker: 'Betway', bookmakerKey: 'betway', outcome: 'Draw', odds: 3.75, stake: 266.67, potentialReturn: 1000.0, result: 'win' },
-      { bookmaker: 'Bet365', bookmakerKey: 'bet365', outcome: 'Chelsea', odds: 3.60, stake: 277.78, potentialReturn: 1000.0, result: 'loss' },
-    ],
-    totalStake: 988.89,
-    guaranteedReturn: 1000.0,
-    profit: 11.11,
-    profitPercent: 1.12,
-    status: 'won',
-    notes: 'Klasyczny surebet 3-drogowy. Remis przyniósł wygraną.',
-    isDemo: true,
-  },
-  {
-    id: 'j-003',
-    createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
-    eventName: 'Bayern Monachium vs Borussia Dortmund',
-    sportTitle: 'Bundesliga',
-    commenceTime: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString(),
-    marketKey: 'h2h',
-    bets: [
-      { bookmaker: 'Pinnacle', bookmakerKey: 'pinnacle', outcome: 'Bayern Monachium', odds: 1.72, stake: 581.40, potentialReturn: 1000.0, result: 'pending' },
-      { bookmaker: 'William Hill', bookmakerKey: 'williamhill', outcome: 'Borussia Dortmund', odds: 5.80, stake: 172.41, potentialReturn: 1000.0, result: 'pending' },
-      { bookmaker: 'Bet365', bookmakerKey: 'bet365', outcome: 'Draw', odds: 4.20, stake: 238.10, potentialReturn: 1000.0, result: 'pending' },
-    ],
-    totalStake: 991.91,
-    guaranteedReturn: 1000.0,
-    profit: 8.09,
-    profitPercent: 0.82,
-    status: 'pending',
-    notes: '',
-    isDemo: true,
-  },
-];
 
 export type NotificationCategory = 'surebet' | 'pre-surebet' | 'system';
 

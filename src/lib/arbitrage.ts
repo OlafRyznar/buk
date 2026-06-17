@@ -8,6 +8,14 @@ import { DEFAULT_SETTINGS, TAX_FREE_BOOKMAKER_KEYS } from './store-types';
 
 const DEFAULT_NEAR_ARBITRAGE_THRESHOLD = 0.04;
 
+// Real surebets come from small cross-bookmaker margin differences — low
+// single digits, occasionally up to ~15% on a mispriced outlier market.
+// Anything above this is overwhelmingly likely to be bad data (two different
+// matches fuzzy-merged into one event, a misread odd, a stale price) rather
+// than a genuine guaranteed-profit opportunity, so it's dropped instead of
+// shown as if it were real.
+const MAX_PLAUSIBLE_PROFIT_PERCENT = 20;
+
 // Default tax rate (%) applied to net winnings, and the set of bookmakers
 // whose tax-free game mode means odds shouldn't be discounted.
 export const DEFAULT_TAX_RATE = DEFAULT_SETTINGS.taxRate;
@@ -57,9 +65,18 @@ export function findArbitrageForEvent(
         odds: o.odds,
         stake: 0,
         potentialReturn: 0,
+        eventUrl: o.eventUrl,
       }));
 
       const recomputed = recomputeStakesWithTax(grossBets, totalStake, taxRate, taxFreeKeys);
+
+      if (recomputed.profit > MAX_PLAUSIBLE_PROFIT_PERCENT) {
+        console.warn(
+          `[Arbitrage] Discarding implausible ${recomputed.profit}% opportunity for ` +
+            `${event.homeTeam} vs ${event.awayTeam} (${market.marketKey}) — likely bad data.`
+        );
+        continue;
+      }
 
       opportunities.push({
         id: `${event.id}-${market.marketKey}`,
@@ -284,8 +301,13 @@ export function calculateMargin(odds: number[]): number {
 }
 
 /**
- * Calculate the net decimal odds after tax on winnings.
- * Polish flat-rate tax applies to net profit only.
+ * Calculate the net decimal odds after tax.
+ * Polish bookmaker tax (podatek od zakładów wzajemnych, 12%) is a turnover
+ * tax: it's deducted from the stake itself before the bet is placed, not
+ * from the profit. E.g. a 100 zł stake at odds 1.10 only has 88 zł actually
+ * in play, returning 88 * 1.10 = 96.80 zł — a loss, even though the gross
+ * odds are above 1. Net odds therefore scale the whole multiplier: a bet
+ * only breaks even once odds >= 1 / (1 - taxRate/100) (~1.136 at 12%).
  *
  * @param odds     Gross decimal odds offered by bookmaker
  * @param taxRate  Tax rate as a percentage (e.g. 12 for 12%)
@@ -293,8 +315,8 @@ export function calculateMargin(odds: number[]): number {
  */
 export function netOddsAfterTax(odds: number, taxRate: number): number {
   if (odds <= 1) return odds;
-  const netProfit = (odds - 1) * (1 - taxRate / 100);
-  return Math.round((1 + netProfit) * 10000) / 10000;
+  const netOdds = odds * (1 - taxRate / 100);
+  return Math.round(netOdds * 10000) / 10000;
 }
 
 function isTaxFreeBookmaker(bookmakerKey: string, taxFreeKeys: Set<string>): boolean {
@@ -328,8 +350,8 @@ export function grossOddsForNet(
   taxFreeKeys: Set<string> = DEFAULT_TAX_FREE_KEYS
 ): number {
   if (isTaxFreeBookmaker(bookmakerKey, taxFreeKeys) || netOdds <= 1) return netOdds;
-  const grossProfit = (netOdds - 1) / (1 - taxRate / 100);
-  return Math.round((1 + grossProfit) * 10000) / 10000;
+  const grossOdds = netOdds / (1 - taxRate / 100);
+  return Math.round(grossOdds * 10000) / 10000;
 }
 
 /**

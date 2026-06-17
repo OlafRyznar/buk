@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { EventWithOdds } from "@/lib/types";
+import { useVisibleEvents } from "@/hooks/useVisibleEvents";
 import TeamFlag from "./TeamFlag";
 import WatchlistButton from "./WatchlistButton";
 
@@ -31,7 +32,9 @@ function extractOddsLine(event: EventWithOdds) {
   return quick || "Brak kursów 1X2";
 }
 
-export default function EventsLeagueExplorer({ events }: EventsLeagueExplorerProps) {
+export default function EventsLeagueExplorer({ events: allEvents }: EventsLeagueExplorerProps) {
+  const events = useVisibleEvents(allEvents);
+
   const grouped = useMemo(() => {
     const map = new Map<string, EventWithOdds[]>();
 
