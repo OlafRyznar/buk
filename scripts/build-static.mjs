@@ -32,11 +32,11 @@ export async function generateStaticParams() {
 `;
 
 // Route Handlers can't be statically exported unless they opt into
-// force-static — easier to just hide them from the build like the API dir.
-// `auth/callback` is the Supabase OAuth callback; add any future ones here.
+// force-static — easier to just hide them from the build. (The OAuth
+// callback is a plain client page now, not a Route Handler, so it doesn't
+// need hiding — only src/app/api does.)
 const ROUTE_DIRS_TO_HIDE = [
   { dir: path.join(root, 'src', 'app', 'api'), backup: path.join(root, '.static-api-backup') },
-  { dir: path.join(root, 'src', 'app', 'auth'), backup: path.join(root, '.static-auth-backup') },
 ];
 const fileBackups = new Map();
 

@@ -1,39 +1,12 @@
-// Server-side storage for the e-mail alert settings + which events we already
-// notified about. Kept separate from the client's localStorage settings
-// because the alert scheduler (instrumentation-node.ts) runs without a
-// browser and needs this even when nobody has the app open.
+// Local dedup bookkeeping for the alert worker (which events/ids it already
+// fired for) plus the n8n webhook sender. Notify settings and event alerts
+// themselves live in Supabase now (notify_settings / event_alerts tables) so
+// the frontend can write them directly without a server — see
+// src/lib/alerts-service.ts (browser) and scripts/alerts-worker.ts (VPS).
 import fs from 'fs';
 import path from 'path';
 
-export interface NotifySettings {
-  email: string;
-  enabled: boolean;
-  minutesBefore: number;
-}
-
-const DEFAULT_NOTIFY_SETTINGS: NotifySettings = {
-  email: '',
-  enabled: false,
-  minutesBefore: 30,
-};
-
-const SETTINGS_PATH = path.join(process.cwd(), 'src', 'lib', 'notify-settings.json');
 const NOTIFIED_PATH = path.join(process.cwd(), 'src', 'lib', 'notified-events.json');
-
-export function readNotifySettings(): NotifySettings {
-  try {
-    if (fs.existsSync(SETTINGS_PATH)) {
-      return { ...DEFAULT_NOTIFY_SETTINGS, ...JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf-8')) };
-    }
-  } catch (e) {
-    console.error('Error reading notify-settings.json:', e);
-  }
-  return DEFAULT_NOTIFY_SETTINGS;
-}
-
-export function writeNotifySettings(settings: NotifySettings) {
-  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf-8');
-}
 
 export function readNotifiedIds(): string[] {
   try {
