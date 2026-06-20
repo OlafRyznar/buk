@@ -25,9 +25,15 @@ export function startAutoScrape() {
     globalFlags.__bukScraping = true;
     try {
       const { runScraper } = await import('./lib/scraper');
+      const { buildMatchFeed } = await import('./lib/match-feed');
       const events = await runScraper();
       if (events.length > 0) {
         fs.writeFileSync(filePath, JSON.stringify(events, null, 2), 'utf-8');
+        fs.writeFileSync(
+          path.join(process.cwd(), 'public', 'match-feed.json'),
+          JSON.stringify(buildMatchFeed(events)),
+          'utf-8'
+        );
         console.log(`[AutoScrape] Saved ${events.length} events (next run in ${intervalMin} min).`);
       } else {
         console.warn('[AutoScrape] Scraper returned 0 events — keeping previous data.');

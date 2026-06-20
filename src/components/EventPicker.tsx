@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 export interface PickerOutcome {
   name: string;
@@ -11,6 +11,8 @@ export interface PickerOutcome {
 export interface PickerEvent {
   id: string;
   eventName: string;
+  homeTeam: string;
+  awayTeam: string;
   sportTitle: string;
   commenceTime: string;
   outcomes: PickerOutcome[];
@@ -22,15 +24,18 @@ export default function EventPicker({ onPick }: { onPick: (event: PickerEvent) =
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
 
-  useEffect(() => {
-    if (!open || events.length > 0) return;
-    setLoading(true);
-    fetch("/api/events/list")
-      .then((r) => r.json())
-      .then((data) => setEvents(data.events ?? []))
-      .catch(() => setEvents([]))
-      .finally(() => setLoading(false));
-  }, [open, events.length]);
+  const handleToggleOpen = () => {
+    const nextOpen = !open;
+    setOpen(nextOpen);
+    if (nextOpen) {
+      setLoading(events.length === 0);
+      fetch("/api/events/list")
+        .then((r) => r.json())
+        .then((data) => setEvents(data.events ?? []))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -44,7 +49,7 @@ export default function EventPicker({ onPick }: { onPick: (event: PickerEvent) =
     <div className="rounded-xl border border-white/8 bg-white/[0.02] p-3">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggleOpen}
         className="flex w-full items-center justify-between gap-2 text-left"
       >
         <span className="text-sm font-semibold text-white">

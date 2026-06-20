@@ -23,8 +23,16 @@ export function useVisibleEvents(events: EventWithOdds[]): EventWithOdds[] {
       .catch(() => {});
   }, []);
 
-  const now = Date.now();
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setNow(Date.now());
+    }, 0);
+  }, []);
+
   return events.filter((event) => {
+    if (now === null) return true;
     const started = new Date(event.commenceTime).getTime() <= now;
     if (!started) return true;
     return watchlist.includes(event.id) || alertEventIds.has(event.id);

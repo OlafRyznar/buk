@@ -9,12 +9,34 @@ import { JournalEntryCard, STATUS_META } from "@/components/JournalEntryCard";
 import ProfitChart from "@/components/ProfitChart";
 import BookmakerIcon from "@/components/BookmakerIcon";
 import { firstNameFrom } from "@/lib/user-display";
-import { fetchNotifySettings, upsertNotifySettings } from "@/lib/alerts-service";
+import type { JournalEntry } from "@/lib/store-types";
 
 interface Profile {
   email: string;
   displayName: string | null;
   createdAt: string;
+}
+
+// Settling an entry: recompute profit from its stake/return so the stats and
+// the card reflect the real result. won → return minus stake; lost → minus the
+// whole stake; cancelled/pending → no profit or loss.
+function resolveProfit(
+  entry: JournalEntry,
+  status: JournalEntryStatus
+): { profit: number; profitPercent: number; bets: JournalEntry["bets"] } {
+  const stake = entry.totalStake;
+  let profit = 0;
+  if (status === "won") profit = entry.guaranteedReturn - stake;
+  else if (status === "lost") profit = -stake;
+
+  const betResult = status === "won" ? "win" : status === "lost" ? "loss" : "pending";
+  const bets = entry.bets.map((b) => ({ ...b, result: betResult as JournalEntry["bets"][number]["result"] }));
+
+  return {
+    profit: Math.round(profit * 100) / 100,
+    profitPercent: stake > 0 ? Math.round((profit / stake) * 10000) / 100 : 0,
+    bets,
+  };
 }
 
 type AccountTab = "overview" | "bookmakers" | "notifications" | "balances" | "safety" | "subscription";
@@ -200,7 +222,7 @@ function OverviewTab({ profile }: { profile: Profile | null }) {
             <JournalEntryCard
               key={e.id}
               entry={e}
-              onUpdateStatus={(id, status) => updateJournalEntry(id, { status })}
+              onUpdateStatus={(id, status) => updateJournalEntry(id, { status, ...resolveProfit(e, status) })}
               onDelete={deleteJournalEntry}
               onUpdateNotes={(id, notes) => updateJournalEntry(id, { notes })}
             />
@@ -289,100 +311,45 @@ function BookmakersTab() {
   );
 }
 
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 function EmailAlertsCard() {
   const { settings, updateSettings } = useApp();
-  const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUserEmail(data.user?.email ?? null);
-      setUserId(data.user?.id ?? null);
-      if (data.user?.id) {
-        fetchNotifySettings(supabase, data.user.id).then((row) => {
-          if (row) updateSettings({ emailAlertsEnabled: row.enabled, emailAlertMinutesBefore: row.minutesBefore });
-        });
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const persist = async (partial: { emailAlertsEnabled?: boolean; emailAlertMinutesBefore?: number }) => {
-    updateSettings(partial);
-    if (!userId || !userEmail) return;
-    setStatus("saving");
-    try {
-      const supabase = createClient();
-      await upsertNotifySettings(supabase, userId, userEmail, {
-        enabled: partial.emailAlertsEnabled,
-        minutesBefore: partial.emailAlertMinutesBefore,
-      });
-      setStatus("idle");
-    } catch {
-      setStatus("error");
-      setErrorMsg("Nie udało się zapisać ustawień.");
-    }
-  };
+  const email = settings.notificationEmail;
+  const emailOk = isValidEmail(email);
 
   return (
     <div className="rounded-xl border border-white/8 bg-transparent p-4 space-y-4">
       <div>
-        <p className="font-medium text-white">Alerty e-mail</p>
+        <p className="font-medium text-white">Adres do powiadomień e-mail</p>
         <p className="text-sm text-white/50 mt-0.5">
-          E-mail z najlepszymi kursami przed startem meczu, na adres konta.
+          Na ten adres przyjdą alerty o meczach, które dodasz.
         </p>
       </div>
 
       <div>
         <label className="text-xs text-white/40 font-semibold uppercase tracking-wider">Adres e-mail</label>
-        <div className="mt-1.5 w-full rounded-[14px] border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white/70">
-          {userEmail ?? "—"}
-        </div>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => updateSettings({ notificationEmail: e.target.value.trim() })}
+          placeholder="twoj@email.com"
+          autoComplete="email"
+          className="mt-1.5 w-full rounded-[14px] border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-sky-400/50"
+        />
+        {email && !emailOk && (
+          <p className="mt-1 text-xs text-rose-400">Podaj poprawny adres e-mail.</p>
+        )}
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-medium text-white text-sm">Wysyłaj alerty e-mail</p>
-          <p className="text-xs text-white/50 mt-0.5">Na adres konta widoczny powyżej</p>
-        </div>
-        <button
-          onClick={() => persist({ emailAlertsEnabled: !settings.emailAlertsEnabled })}
-          disabled={!userEmail}
-          className="relative h-7 rounded-full transition-colors shrink-0 disabled:opacity-40"
-          style={{ width: 52, backgroundColor: settings.emailAlertsEnabled ? "#10b981" : "rgba(255,255,255,0.15)" }}
-        >
-          <span
-            className={`absolute top-1 left-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-              settings.emailAlertsEnabled ? "translate-x-6" : "translate-x-0"
-            }`}
-          />
-        </button>
+      <div className="rounded-lg border border-white/8 bg-white/[0.02] p-3">
+        <p className="text-xs text-white/60">
+          Powiadomienia dodajesz na konkretnym meczu — wejdź w wydarzenie i kliknij{" "}
+          <span className="font-semibold text-sky-300">🔔 Powiadom mnie</span> (np. &quot;X minut przed
+          startem&quot; albo &quot;gdy kurs ≥ …&quot;). Alert przyjdzie tylko dla tego meczu, gdy aplikacja jest
+          otwarta w przeglądarce.
+        </p>
       </div>
-
-      <div className="space-y-2">
-        <p className="font-medium text-white text-sm">Wyślij ile minut przed meczem</p>
-        <div className="flex items-center gap-4">
-          <input
-            type="range"
-            min={5}
-            max={120}
-            step={5}
-            value={settings.emailAlertMinutesBefore}
-            onChange={(e) => updateSettings({ emailAlertMinutesBefore: parseInt(e.target.value) })}
-            onMouseUp={() => persist({ emailAlertMinutesBefore: settings.emailAlertMinutesBefore })}
-            onTouchEnd={() => persist({ emailAlertMinutesBefore: settings.emailAlertMinutesBefore })}
-            className="w-full flex-1 accent-sky-500"
-          />
-          <span className="w-20 text-right font-mono font-bold text-sky-300">
-            {settings.emailAlertMinutesBefore} min
-          </span>
-        </div>
-      </div>
-
-      {status === "error" && <p className="text-xs text-rose-400">{errorMsg}</p>}
     </div>
   );
 }

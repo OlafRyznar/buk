@@ -131,6 +131,7 @@ export interface DashboardStats {
 }
 
 export const SUPPORTED_SPORTS = [
+  { key: 'soccer_fifa_world_cup', title: 'Mistrzostwa Świata' },
   { key: 'soccer_epl', title: 'EPL - Premier League' },
   { key: 'soccer_spain_la_liga', title: 'La Liga - Spain' },
   { key: 'soccer_germany_bundesliga', title: 'Bundesliga - Germany' },

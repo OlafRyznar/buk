@@ -10,8 +10,6 @@ interface AuthFormProps {
   mode: "login" | "register";
 }
 
-const isStaticExport = process.env.NEXT_PUBLIC_STATIC_EXPORT === "1";
-
 export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const isLogin = mode === "login";
@@ -98,16 +96,12 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   return (
     <div className="glass-panel rounded-2xl p-6 space-y-4">
-      {!isStaticExport && (
-        <>
-          <GoogleAuthButton />
-          <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-white/10" />
-            <span className="text-xs text-white/35">lub</span>
-            <span className="h-px flex-1 bg-white/10" />
-          </div>
-        </>
-      )}
+      <GoogleAuthButton />
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-white/10" />
+        <span className="text-xs text-white/35">lub</span>
+        <span className="h-px flex-1 bg-white/10" />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

@@ -13,6 +13,8 @@ export async function GET() {
       return {
         id: event.id,
         eventName: `${event.homeTeam} vs ${event.awayTeam}`,
+        homeTeam: event.homeTeam,
+        awayTeam: event.awayTeam,
         sportTitle: event.sportTitle,
         commenceTime: event.commenceTime,
         outcomes: h2h.outcomes.map((o) => ({

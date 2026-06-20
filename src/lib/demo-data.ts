@@ -433,5 +433,81 @@ export function getDemoEvents(): OddsApiEvent[] {
         },
       ],
     },
+    {
+      id: 'demo-wc-001',
+      sport_key: 'soccer_fifa_world_cup',
+      sport_title: 'Mistrzostwa Świata 2026',
+      commence_time: tomorrow.toISOString(),
+      home_team: 'Brazylia',
+      away_team: 'Szkocja',
+      bookmakers: [
+        {
+          key: 'sts',
+          title: 'STS',
+          last_update: now.toISOString(),
+          markets: [{
+            key: 'h2h',
+            last_update: now.toISOString(),
+            outcomes: [
+              { name: 'Brazylia', price: 1.45 },
+              { name: 'Draw', price: 4.80 },
+              { name: 'Szkocja', price: 7.20 },
+            ],
+          }],
+        },
+        {
+          key: 'superbet',
+          title: 'Superbet',
+          last_update: now.toISOString(),
+          markets: [{
+            key: 'h2h',
+            last_update: now.toISOString(),
+            outcomes: [
+              { name: 'Brazylia', price: 1.48 },
+              { name: 'Draw', price: 4.60 },
+              { name: 'Szkocja', price: 7.50 },
+            ],
+          }],
+        },
+      ],
+    },
+    {
+      id: 'demo-wc-002',
+      sport_key: 'soccer_fifa_world_cup',
+      sport_title: 'Mistrzostwa Świata 2026',
+      commence_time: dayAfter.toISOString(),
+      home_team: 'Niemcy',
+      away_team: 'Ekwador',
+      bookmakers: [
+        {
+          key: 'fortuna',
+          title: 'Fortuna',
+          last_update: now.toISOString(),
+          markets: [{
+            key: 'h2h',
+            last_update: now.toISOString(),
+            outcomes: [
+              { name: 'Niemcy', price: 1.65 },
+              { name: 'Draw', price: 4.00 },
+              { name: 'Ekwador', price: 5.50 },
+            ],
+          }],
+        },
+        {
+          key: 'betclic',
+          title: 'Betclic',
+          last_update: now.toISOString(),
+          markets: [{
+            key: 'h2h',
+            last_update: now.toISOString(),
+            outcomes: [
+              { name: 'Niemcy', price: 1.62 },
+              { name: 'Draw', price: 4.20 },
+              { name: 'Ekwador', price: 5.20 },
+            ],
+          }],
+        },
+      ],
+    },
   ];
 }

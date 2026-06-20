@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
   const events = await getAllEvents();
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
 
   const byGroup = new Map<string, { upcoming: EventWithOdds[]; finished: EventWithOdds[] }>();
@@ -30,7 +31,7 @@ export default async function EventsPage() {
   }
 
   const groupsView = (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div key="groups-view" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {WORLD_CUP_GROUPS.map((group) => {
         const bucket = byGroup.get(group.letter)!;
         return (
@@ -41,7 +42,7 @@ export default async function EventsPage() {
   );
 
   const leagueView = (
-    <>
+    <div key="leagues-view">
       <EventsLeagueExplorer events={events} />
       {events.length === 0 && (
         <div className="glass-panel rounded-xl p-8 text-center sm:p-12">
@@ -49,7 +50,7 @@ export default async function EventsPage() {
           <p className="text-xs text-white/50">Nie znaleziono żadnych nadchodzących wydarzeń sportowych.</p>
         </div>
       )}
-    </>
+    </div>
   );
 
   return (

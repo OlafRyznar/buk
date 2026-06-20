@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EventWithOdds } from "@/lib/types";
 import { impliedProbability } from "@/lib/arbitrage";
 import { ALL_BOOKMAKERS } from "@/lib/store-types";
@@ -18,7 +18,14 @@ interface EventCardProps {
 export default function EventCard({ event, compact = false }: EventCardProps) {
   const h2hMarket = event.markets.find((m) => m.marketKey === "h2h");
   const [redirectModal, setRedirectModal] = useState<{ bookmakerName: string; url: string } | null>(null);
-  const started = new Date(event.commenceTime).getTime() <= Date.now();
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const isStarted = new Date(event.commenceTime).getTime() <= Date.now();
+    setTimeout(() => {
+      setStarted(isStarted);
+    }, 0);
+  }, [event.commenceTime]);
 
   return (
     <div className="glass-panel card-hover animate-slide-up rounded-xl p-4 sm:p-5">

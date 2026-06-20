@@ -11,6 +11,7 @@ import {
   DEMO_NOTIFICATIONS,
 } from "@/lib/store-types";
 import { createClient } from "@/lib/supabase/client";
+import MatchAlertWatcher from "@/components/MatchAlertWatcher";
 import {
   fetchJournal,
   insertJournalEntry,
@@ -81,15 +82,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIsLoaded(true);
   }, []);
 
-  // Email alerts always go to the logged-in account, never a freely typed
-  // address — keep settings.notificationEmail mirroring the auth session.
   // The journal lives in Supabase, scoped to this user id, instead of
   // localStorage — it needs to follow the account across devices.
+  // (notificationEmail is a freely typed address — see EmailAlertsCard —
+  // so it is NOT overwritten from the auth session here.)
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      const email = data.user?.email;
-      if (email) setSettings((prev) => (prev.notificationEmail === email ? prev : { ...prev, notificationEmail: email }));
       if (data.user?.id) setUserId(data.user.id);
     });
   }, []);
@@ -194,6 +193,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       watchlist,
       toggleWatchlist,
     }}>
+      <MatchAlertWatcher />
       {children}
     </AppContext.Provider>
   );

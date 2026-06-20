@@ -57,13 +57,21 @@ export default function EventAlertButton({ eventId, eventName, sportTitle, outco
     setErrorMsg("");
 
     const supabase = createClient();
+    // datetime-local input (no timezone) → convert to ISO string
+    // new Date("YYYY-MM-DDTHH:MM:SS") interprets as LOCAL time
+    // .toISOString() converts to UTC automatically
+    let isoAtTime: string | undefined;
+    if (type === "at-time" && atTime) {
+      isoAtTime = new Date(`${atTime}:00`).toISOString();
+    }
+
     const ok = await addEventAlert(supabase, userId, settings.notificationEmail, {
       eventId,
       eventName,
       sportTitle,
       type,
       minutesBefore: type === "before-kickoff" ? minutesBefore : undefined,
-      atTime: type === "at-time" ? atTime : undefined,
+      atTime: type === "at-time" ? isoAtTime : undefined,
       outcomeName: type === "odds-threshold" ? outcomeName : undefined,
       thresholdPrice: type === "odds-threshold" ? thresholdPrice : undefined,
     });

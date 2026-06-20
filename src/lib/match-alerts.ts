@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { OddsApiEvent } from './types';
 import { ALL_BOOKMAKERS } from './store-types';
-import { readNotifySettings, readNotifiedIds, markNotified, sendToN8n, OddsRow } from './notify-store';
+import { readNotifiedIds, markNotified, sendToN8n, OddsRow, readNotifiedEventAlertIds, markEventAlertNotified } from './notify-store';
 import { readEventAlerts, removeEventAlert, EventAlert } from './event-alerts';
 
 const SCRAPED_DATA_PATH = path.join(process.cwd(), 'src', 'lib', 'scraped-data.json');
@@ -46,48 +46,15 @@ function bestOddsForEvent(event: OddsApiEvent): OddsRow[] {
 }
 
 export async function checkAndSendMatchAlerts() {
-  const settings = readNotifySettings();
-  if (!settings.enabled || !settings.email) return;
-
-  const events = readScrapedEvents();
-  if (events.length === 0) return;
-
-  const notifiedIds = new Set(readNotifiedIds());
-  const now = Date.now();
-  const windowMs = 60 * 1000; // scheduler runs every minute, so a 1-minute window won't double-fire or skip
-
-  for (const event of events) {
-    if (notifiedIds.has(event.id)) continue;
-    const minutesUntil = (new Date(event.commence_time).getTime() - now) / 60000;
-    const targetMinutes = settings.minutesBefore;
-    const withinWindow =
-      minutesUntil <= targetMinutes && minutesUntil > targetMinutes - windowMs / 60000;
-    if (!withinWindow) continue;
-
-    const result = await sendToN8n({
-      isTest: false,
-      email: settings.email,
-      event: {
-        id: event.id,
-        sportTitle: event.sport_title,
-        homeTeam: event.home_team,
-        awayTeam: event.away_team,
-        commenceTime: event.commence_time,
-        minutesUntil: Math.round(minutesUntil),
-      },
-      odds: bestOddsForEvent(event),
-    });
-
-    markNotified(event.id);
-    if (result.ok) {
-      console.log(`[MatchAlerts] Sent alert for ${event.home_team} vs ${event.away_team}`);
-    } else {
-      console.error(`[MatchAlerts] Failed to send alert for ${event.id}:`, result.error || result.status);
-    }
-  }
+  // Generic match starting soon alerts disabled to prevent spamming n8n.
+  // We only want explicitly added match alerts to fire.
+  return;
 }
 
 async function fireEventAlert(alert: EventAlert, event: OddsApiEvent, minutesUntil: number) {
+  markEventAlertNotified(alert.id);
+  removeEventAlert(alert.id);
+
   const result = await sendToN8n({
     isTest: false,
     email: alert.email,
@@ -101,7 +68,6 @@ async function fireEventAlert(alert: EventAlert, event: OddsApiEvent, minutesUnt
     },
     odds: bestOddsForEvent(event),
   });
-  removeEventAlert(alert.id);
   if (result.ok) {
     console.log(`[EventAlerts] Fired ${alert.type} alert for ${event.home_team} vs ${event.away_team}`);
   } else {
@@ -118,10 +84,14 @@ export async function checkAndSendEventAlerts() {
 
   const events = readScrapedEvents();
   const eventsById = new Map(events.map(e => [e.id, e]));
+  const notifiedAlertIds = new Set(readNotifiedEventAlertIds());
   const now = Date.now();
   const windowMs = 60 * 1000;
 
   for (const alert of alerts) {
+    // Skip if this alert has already been fired
+    if (notifiedAlertIds.has(alert.id)) continue;
+
     const event = eventsById.get(alert.eventId);
     if (!event) continue; // event disappeared from the last scrape
     const minutesUntil = (new Date(event.commence_time).getTime() - now) / 60000;
