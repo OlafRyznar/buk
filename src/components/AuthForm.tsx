@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
@@ -10,8 +10,10 @@ interface AuthFormProps {
   mode: "login" | "register";
 }
 
-export default function AuthForm({ mode }: AuthFormProps) {
+function AuthFormInner({ mode }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") || "/";
   const isLogin = mode === "login";
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState("");
@@ -53,7 +55,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         );
         return;
       }
-      router.push("/");
+      router.push(redirectTo);
       router.refresh();
       return;
     }
@@ -73,7 +75,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       return;
     }
     if (data.session) {
-      router.push("/");
+      router.push(redirectTo);
       router.refresh();
       return;
     }
@@ -165,5 +167,13 @@ export default function AuthForm({ mode }: AuthFormProps) {
         </p>
       </form>
     </div>
+  );
+}
+
+export default function AuthForm({ mode }: AuthFormProps) {
+  return (
+    <Suspense fallback={<div className="glass-panel rounded-2xl p-6 text-center text-sm text-white/50">Chwila…</div>}>
+      <AuthFormInner mode={mode} />
+    </Suspense>
   );
 }

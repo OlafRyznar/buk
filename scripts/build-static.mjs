@@ -32,9 +32,9 @@ export async function generateStaticParams() {
 `;
 
 // Route Handlers can't be statically exported unless they opt into
-// force-static — easier to just hide them from the build like the API dir.
-// `src/app/auth/callback` stays in the export: it's now a client page that
-// exchanges the OAuth code in the browser, so it works without a server.
+// force-static — easier to just hide them from the build. (The OAuth
+// callback is a plain client page now, not a Route Handler, so it doesn't
+// need hiding — only src/app/api does.)
 const ROUTE_DIRS_TO_HIDE = [
   { dir: path.join(root, 'src', 'app', 'api'), backup: path.join(root, '.static-api-backup') },
 ];
