@@ -1,6 +1,7 @@
 import EventsLeagueExplorer from "@/components/EventsLeagueExplorer";
 import EventsViewTabs from "@/components/EventsViewTabs";
 import WorldCupGroupCard from "@/components/WorldCupGroupCard";
+import WorldCupBracket from "@/components/WorldCupBracket";
 import { getAllEvents } from "@/lib/data-service";
 import { WORLD_CUP_GROUPS, groupLetterForMatch } from "@/lib/world-cup-groups";
 import { EventWithOdds } from "@/lib/types";
@@ -31,13 +32,16 @@ export default async function EventsPage() {
   }
 
   const groupsView = (
-    <div key="groups-view" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {WORLD_CUP_GROUPS.map((group) => {
-        const bucket = byGroup.get(group.letter)!;
-        return (
-          <WorldCupGroupCard key={group.letter} group={group} upcoming={bucket.upcoming} finished={bucket.finished} />
-        );
-      })}
+    <div key="groups-view">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {WORLD_CUP_GROUPS.map((group) => {
+          const bucket = byGroup.get(group.letter)!;
+          return (
+            <WorldCupGroupCard key={group.letter} group={group} upcoming={bucket.upcoming} finished={bucket.finished} />
+          );
+        })}
+      </div>
+      <WorldCupBracket />
     </div>
   );
 
