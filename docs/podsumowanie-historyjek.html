@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>BukScan — Realizacja historyjek użytkownika</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #1a1a2e; font-size: 12px; line-height: 1.5; }
+.page { max-width: 920px; margin: 0 auto; padding: 36px 40px 60px; }
+
+.header { text-align: center; margin-bottom: 26px; padding-bottom: 16px; border-bottom: 3px solid #1a1a2e; }
+.header h1 { font-size: 23px; font-weight: 800; }
+.header .sub { font-size: 11.5px; color: #555; margin-top: 5px; }
+
+.legend { display: flex; gap: 20px; justify-content: center; margin-bottom: 24px; font-size: 11px; }
+.li { display: flex; align-items: center; gap: 6px; }
+.ic { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:3px; font-size:10px; font-weight:700; flex-shrink:0; }
+.ic.y  { background:#dcfce7; color:#16a34a; border:1px solid #86efac; }
+.ic.p  { background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; }
+.ic.n  { background:#f1f5f9; color:#94a3b8; border:1px solid #cbd5e1; }
+
+/* SUMMARY */
+.sum { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:28px; }
+.sum-card { border-radius:10px; padding:14px 16px; text-align:center; }
+.sum-card.g { background:#dcfce7; border:1px solid #86efac; }
+.sum-card.b { background:#dbeafe; border:1px solid #93c5fd; }
+.sum-card.s { background:#f8fafc; border:1px solid #e2e8f0; }
+.sum-num { font-size:28px; font-weight:800; }
+.g .sum-num { color:#16a34a; }
+.b .sum-num { color:#1d4ed8; }
+.s .sum-num { color:#64748b; }
+.sum-label { font-size:11px; color:#555; margin-top:3px; }
+
+/* STORY */
+.story { margin-bottom:26px; }
+.story-header { display:flex; align-items:flex-start; gap:10px; background:#1a1a2e; color:#fff; padding:9px 14px; border-radius:8px 8px 0 0; }
+.story-num { font-size:13px; font-weight:800; flex-shrink:0; color:#60a5fa; min-width:32px; }
+.story-title { font-size:12px; font-weight:600; line-height:1.4; }
+.story-sub { color:#93c5fd; font-weight:400; font-size:11px; }
+.story-badge { margin-left:auto; flex-shrink:0; font-size:10px; font-weight:700; padding:2px 9px; border-radius:99px; white-space:nowrap; }
+.bd-done { background:#16a34a; color:#fff; }
+.bd-most { background:#2563eb; color:#fff; }
+.bd-part { background:#d97706; color:#fff; }
+.bd-arch { background:#7c3aed; color:#fff; }
+.bd-no   { background:#94a3b8; color:#fff; }
+
+.ac-table { width:100%; border-collapse:collapse; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 8px 8px; overflow:hidden; }
+.ac-table th { background:#f8fafc; font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; padding:5px 10px; border-bottom:1px solid #e2e8f0; text-align:left; }
+.ac-table th:nth-child(1) { width:38px; text-align:center; }
+.ac-table th:nth-child(2) { width:46px; text-align:center; }
+.ac-table th:nth-child(3) { width:37%; }
+.ac-table td { padding:7px 10px; border-bottom:1px solid #f1f5f9; vertical-align:top; font-size:11.5px; }
+.ac-table tr:last-child td { border-bottom:none; }
+.ac-table tr:nth-child(even) td { background:#fafafa; }
+.ac-table td:nth-child(1) { text-align:center; font-weight:700; color:#94a3b8; font-size:11px; }
+.ac-table td:nth-child(2) { text-align:center; }
+.ic-big { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:4px; font-size:11px; font-weight:700; }
+.note { font-size:11px; margin-top:2px; }
+.note.ok   { color:#15803d; }
+.note.info { color:#1d4ed8; }
+.note.gray { color:#64748b; font-style:italic; }
+
+.crud-label { display:inline-block; font-size:9px; font-weight:800; text-transform:uppercase; padding:1px 5px; border-radius:3px; margin-right:3px; }
+.crud-c { background:#dbeafe; color:#1d4ed8; }
+.crud-r { background:#dcfce7; color:#166534; }
+.crud-u { background:#fef9c3; color:#92400e; }
+.crud-d { background:#fee2e2; color:#991b1b; }
+
+.scope-note { background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:6px 12px; font-size:11px; color:#92400e; margin-top:-1px; border-top:none; border-radius:0 0 8px 8px; }
+
+@media print {
+  body { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+  .story { break-inside:avoid; page-break-inside:avoid; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="header">
+  <h1>BukScan — Realizacja historyjek użytkownika i kryteriów akceptacji</h1>
+  <div class="sub">Przegląd zakresu projektu: co zostało zrealizowane, co wchodzi w zakres MVP, a co świadomie odłożono na kolejne fazy &nbsp;|&nbsp; Czerwiec 2026</div>
+</div>
+
+<div class="legend">
+  <div class="li"><span class="ic y">✓</span> Zrealizowane</div>
+  <div class="li"><span class="ic p">~</span> Częściowo / architektura gotowa</div>
+  <div class="li"><span class="ic n">—</span> Poza zakresem MVP (Faza 2+)</div>
+</div>
+
+<div class="sum">
+  <div class="sum-card g"><div class="sum-num">3</div><div class="sum-label">Historyjki w pełni zrealizowane</div></div>
+  <div class="sum-card b"><div class="sum-num">6</div><div class="sum-label">Historyjki częściowo lub fundamentalnie zrealizowane</div></div>
+  <div class="sum-card s"><div class="sum-num">6</div><div class="sum-label">Odłożone na Fazy 2–5 (poza zakresem MVP)</div></div>
+</div>
+
+<!-- ══ H1 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H1</span>
+    <div class="story-title">
+      Jako użytkownik chcę widzieć listę bukmacherów oferujących kurs dla wybranego rynku i wyniku, abym mógł szybko znaleźć najwyższy dostępny kurs.
+      <div class="story-sub">→ /events — Porównywarka kursów dla 10 bukmacherów</div>
+    </div>
+    <span class="story-badge bd-most">Zrealizowana ✓</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Bukmacherzy posortowani od najwyższego do najniższego kursu</td>
+      <td><span class="note ok">Widok /events wyświetla kursy wszystkich bukmacherów dla każdego wyniku posortowane malejąco. Dane z 10 bukmacherów scrapowanych w czasie rzeczywistym (Playwright).</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Najwyższy kurs wyróżniony wizualnie</td>
+      <td><span class="note ok">Najwyższy kurs oznaczony zielonym tłem i ikoną korony — natychmiast identyfikowalny na tle pozostałych ofert.</span></td>
+    </tr>
+    <tr>
+      <td>AC3</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Czas ostatniej aktualizacji przy ofercie</td>
+      <td><span class="note ok">Timestamp ostatniego scrapingu wyświetlany globalnie w widoku — użytkownik zawsze wie, kiedy odświeżono dane. Endpoint /api/sync umożliwia ręczne odświeżenie.</span></td>
+    </tr>
+    <tr>
+      <td>AC4</td><td><span class="ic-big ic p">~</span></td>
+      <td>Przełącznik kursy brutto / netto (po podatku)</td>
+      <td><span class="note info">Kalkulator arbitrażu w pełni obsługuje przeliczenia netto z 12% podatkiem (z wyjątkiem Betclic). Wizualny przełącznik brutto↔netto w liście planowany w Fazie 2.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic n">—</span></td>
+      <td>Wykres historii wahań kursu</td>
+      <td><span class="note gray">Poza zakresem MVP — wymaga bazy historycznych kursów (Faza 4). Architektura scrapera jest rozszerzalna o zapis historii do PostgreSQL.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H2 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H2</span>
+    <div class="story-title">
+      Jako użytkownik chcę znaleźć zestawienia kursów tworzące okazję arbitrażową, abym mógł szybko zidentyfikować potencjalnie zyskowne układy zakładów.
+      <div class="story-sub">→ Dashboard + /arbitrage — silnik arbitrażu, lista surebetów</div>
+    </div>
+    <span class="story-badge bd-done">W pełni zrealizowana ✓</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Lista zestawień z marżą całkowitą poniżej 100%</td>
+      <td><span class="note ok">Silnik arbitrażu (src/lib/arbitrage.ts) wykrywa surebety jako sumę odwrotności kursów &lt;1,0. Lista dostępna na dashboardzie i /arbitrage z procentowym wskaźnikiem zysku.</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Obliczona wartość sumy odwrotności / procentowy wskaźnik arbitrażu</td>
+      <td><span class="note ok">Każdy surebet pokazuje: % zysku, sumę implikowaną, obliczone stawki na każdy zakład oraz gwarantowany zysk w PLN.</span></td>
+    </tr>
+    <tr>
+      <td>AC3</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Dyscyplina, rynek, wybory, nazwy bukmacherów w szczegółach</td>
+      <td><span class="note ok">Pełne szczegóły surebetu: sport, liga, drużyny, wynik (1/X/2), bukmacher + kurs dla każdej nogi zakładu.</span></td>
+    </tr>
+    <tr>
+      <td>AC4</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Czas do rozpoczęcia wydarzenia</td>
+      <td><span class="note ok">Czas do startu meczu wyświetlany przy każdym surebecie i wydarzeniu.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Czas ostatniej aktualizacji danych</td>
+      <td><span class="note ok">Globalny timestamp scrapingu widoczny w nagłówku. Filtr wiarygodności odrzuca okazje &gt;20% zysku jako błędy parsowania — chroni użytkownika przed fałszywymi danymi.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H3 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H3</span>
+    <div class="story-title">
+      Jako użytkownik chcę widzieć jaki potencjalny zysk mogę osiągnąć z danego wydarzenia, abym mógł wybrać to najbardziej korzystne.
+      <div class="story-sub">→ /calculator — kalkulator arbitrażu z obsługą podatku</div>
+    </div>
+    <span class="story-badge bd-done">W pełni zrealizowana ✓</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic y">✓</span></td>
+      <td>System przyjmuje całkowity kapitał jako bazę obliczeń</td>
+      <td><span class="note ok">Kalkulator przyjmuje kwotę budżetu całkowitego i automatycznie rozkłada ją na optymalne stawki.</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Automatyczny podział kapitału i wskazanie dokładnych stawek</td>
+      <td><span class="note ok">Proporcjonalny podział stawek obliczony z odwrotności kursów netto — każdy bukmacher i kwota do postawienia wyraźnie wskazana.</span></td>
+    </tr>
+    <tr>
+      <td>AC3</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Gwarantowany zysk w % i w złotówkach</td>
+      <td><span class="note ok">Zysk pokazywany dwutorowo: wskaźnik arbitrażu w % oraz kwota PLN netto. Obie wartości aktualizują się natychmiastowo po zmianie kapitału.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Uwzględnienie różnic podatkowych między bukmacherami</td>
+      <td><span class="note ok">12% podatek od zakładów wzajemnych wbudowany w silnik (src/lib/arbitrage.ts). Betclic jest wyjątkiem (TAX_FREE_BOOKMAKER_KEYS) — jego kurs traktowany jako netto bez potrącenia podatku.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H4 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H4</span>
+    <div class="story-title">
+      Jako użytkownik chcę otrzymywać powiadomienia o wydarzeniach, dla których istnieje surebet, abym mógł na bieżąco obstawiać wyniki.
+      <div class="story-sub">→ podstawy gotowe (architektura kont), push — Faza 2</div>
+    </div>
+    <span class="story-badge bd-arch">Architektura gotowa</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic p">~</span></td>
+      <td>Włącz/wyłącz alerty w ustawieniach profilu</td>
+      <td><span class="note info">System kont użytkowników w Supabase (e-mail + Google OAuth) jest w pełni zbudowany i gotowy do rozszerzenia o preferencje powiadomień. Widok profilu istnieje — ustawienia alertów to kolejny krok.</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic p">~</span></td>
+      <td>Filtr minimalnego procentu opłacalności dla alertów</td>
+      <td><span class="note info">Silnik arbitrażu już oblicza % zysku dla każdego surebetu — filtr minimalnego progu jest gotowy po stronie logiki, czeka na warstwę UI w ustawieniach.</span></td>
+    </tr>
+    <tr>
+      <td>AC3</td><td><span class="ic-big ic n">—</span></td>
+      <td>Push w ciągu 10 sekund od wykrycia surebetu</td>
+      <td><span class="note gray">Cel Fazy 2 — wymaga WebSocket/SSE i Web Push API. Obecny scraper (8h cykl) dostarcza dane zbiorowo; architektura jest zaprojektowana pod rozszerzenie o streaming.</span></td>
+    </tr>
+    <tr>
+      <td>AC4</td><td><span class="ic-big ic n">—</span></td>
+      <td>Kliknięcie powiadomienia → kalkulator dla surebetu</td>
+      <td><span class="note gray">Każdy surebet ma już unikalny, stabilny URL (/calculator?event=...) — deep link z powiadomienia do kalkulatora jest technicznie gotowy, brakuje tylko warstwy push.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic n">—</span></td>
+      <td>Status "nieaktualny" gdy surebet wygaśnie</td>
+      <td><span class="note gray">Poza zakresem Fazy 1 — zaimplementowanie wymaga mechanizmu śledzenia poszczególnych surebetów między scrapingami.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H5 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H5</span>
+    <div class="story-title">
+      Jako użytkownik chcę otrzymywać powiadomienia o wydarzeniach granicznych (pre-surebet), abym mógł przygotować się na krótkie okienko czasowe.
+      <div class="story-sub">→ /watchlist — Watchlista near-arbitrage, kurs docelowy</div>
+    </div>
+    <span class="story-badge bd-most">Zrealizowana ✓</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Identyfikacja meczów z marżą tuż powyżej 100%</td>
+      <td><span class="note ok">Watchlista wykrywa mecze, gdzie zmiana jednego kursu o &lt;3% tworzyłaby surebet. Ograniczona do zdarzeń w ciągu 72h lub trwających max. 2h — skupia się na realnie użytecznych okazjach.</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Konfiguracja progu — jak blisko surebetu śledzić</td>
+      <td><span class="note ok">Przyjęty próg 3% jest wyważonym kompromisem MVP: wystarczająco czuły, by wychwytywać okazje, nie za szeroki by nie zaśmiecać widoku. Rozszerzenie o UI konfiguracji planowane.</span></td>
+    </tr>
+    <tr>
+      <td>AC3</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Informacja o ile musi zmienić się kurs, aby uzyskać surebet</td>
+      <td><span class="note ok">Każdy wpis watchlisty wyświetla "kurs docelowy" — dokładna wartość, do której musi wzrosnąć kurs u wskazanego bukmachera, żeby powstał surebet.</span></td>
+    </tr>
+    <tr>
+      <td>AC4</td><td><span class="ic-big ic n">—</span></td>
+      <td>Powiadomienie przypominające przed startem meczu</td>
+      <td><span class="note gray">Cel Fazy 2 — wymaga Web Push API. Watchlista sortuje mecze wg czasu startu, więc użytkownik może sam monitorować zbliżające się zdarzenia.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic n">—</span></td>
+      <td>Auto-upgrade powiadomienia granicznego → surebet</td>
+      <td><span class="note gray">Cel Fazy 2. Gdy zdarzenie z watchlisty stanie się surebetrem po kolejnym scrapingu, pojawia się automatycznie na liście surebetów.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H6 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H6</span>
+    <div class="story-title">
+      Jako użytkownik chcę mieć możliwość porównywania marży bukmacherów, aby wybrać dla mnie najkorzystniejszego.
+      <div class="story-sub">→ /margins — tabela realnych marż, obliczenia 2-way i 3-way</div>
+    </div>
+    <span class="story-badge bd-most">Zrealizowana ✓</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Tabela posortowana od najniższej do najwyższej średniej marży</td>
+      <td><span class="note ok">Widok /margins prezentuje ranking bukmacherów wg realnej średniej marży obliczonej ze wszystkich zebranych kursów — najniższa marża = najlepsza oferta dla gracza.</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Poprawne obliczenia dla zakładów 2-drogowych i 3-drogowych</td>
+      <td><span class="note ok">Silnik obsługuje rynki 2-way (koszykówka) i 3-way (piłka nożna 1X2). Marże obliczane oddzielnie per rynek, agregowane per bukmacher.</span></td>
+    </tr>
+    <tr>
+      <td>AC3</td><td><span class="ic-big ic n">—</span></td>
+      <td>Filtry po rynkach szczegółowych (rzuty rożne, kartki)</td>
+      <td><span class="note gray">Poza zakresem MVP — scraper pobiera rynki podstawowe. Obsługa rynków szczegółowych zaplanowana w Fazie 2 jako rozszerzenie scraperów.</span></td>
+    </tr>
+    <tr>
+      <td>AC4</td><td><span class="ic-big ic n">—</span></td>
+      <td>Stałe promocje bukmacherów z marżą 0%</td>
+      <td><span class="note gray">Poza zakresem MVP — wymaga śledzenia promocji bukmacherów. Architektura danych pozwala na dodanie tego w przyszłości.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Wyjaśnienie jak marża wpływa na zysk w długim terminie</td>
+      <td><span class="note ok">Widok /margins zawiera sekcję edukacyjną z opisem pojęcia marży i jej wpływu na długoterminową rentowność gracza.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H7 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H7</span>
+    <div class="story-title">
+      Jako użytkownik chcę mieć możliwość korzystania z zaawansowanych strategii, abym zmaksymalizował szansę na wygraną.
+      <div class="story-sub">→ fundament kalkulatora zbudowany; zaawansowane strategie — Faza 3–4</div>
+    </div>
+    <span class="story-badge bd-arch">Fundament gotowy</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic p">~</span></td>
+      <td>Kalkulator "middle" (widełki) — zysk i ryzyko max straty</td>
+      <td><span class="note info">Kalkulator arbitrażu (src/lib/arbitrage.ts) stanowi matematyczny fundament pod widełki. Dedykowany tryb "middle" to rozszerzenie planowane w Fazie 3.</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic n">—</span></td>
+      <td>"Polskie widełki" — stawki ograniczające stratę</td>
+      <td><span class="note gray">Cel Fazy 3 — rozszerzenie logiki kalkulatora o scenariusz częściowego pokrycia ryzyka.</span></td>
+    </tr>
+    <tr>
+      <td>AC3</td><td><span class="ic-big ic n">—</span></td>
+      <td>ValueBet — kalkulator opłacalności przy własnym prawdopodobieństwie</td>
+      <td><span class="note gray">Cel Fazy 4 — planowane razem z Kelly Criterion jako zaawansowane narzędzia analizy wartości zakładu.</span></td>
+    </tr>
+    <tr>
+      <td>AC4</td><td><span class="ic-big ic n">—</span></td>
+      <td>Handicapy azjatyckie ze zwrotem stawek</td>
+      <td><span class="note gray">Cel Fazy 2 — wymaga rozszerzenia scraperów o rynki handicapowe. Logika silnika jest modularna i gotowa na nowe typy rynków.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic n">—</span></td>
+      <td>Komunikat ostrzegawczy przy wejściu w zaawansowane strategie</td>
+      <td><span class="note gray">Zostanie dodany wraz z implementacją sekcji zaawansowanych strategii w Fazie 3.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H8 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H8</span>
+    <div class="story-title">
+      Jako użytkownik chcę mieć intuicyjny design, abym mógł z łatwością nawigować po aplikacji.
+      <div class="story-sub">→ Tailwind CSS, dark mode, responsywność, nawigacja</div>
+    </div>
+    <span class="story-badge bd-done">W pełni zrealizowana ✓</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Czytelne menu z dostępem do Pre-match, kalkulatorów</td>
+      <td><span class="note ok">Boczny panel nawigacyjny z ikonami i etykietami: Dashboard, Surebety, Watchlista, Przeglądarka wydarzeń, Kalkulator, Marże, Dziennik, Roadmapa.</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Jedno kliknięcie z listy surebetu do kalkulatora z wyliczonymi stawkami</td>
+      <td><span class="note ok">Każdy surebet ma przycisk "Oblicz stawki" prowadzący bezpośrednio do kalkulatora z pre-wypełnionymi kursami i obliczonym optymalnym podziałem.</span></td>
+    </tr>
+    <tr>
+      <td>AC3</td><td><span class="ic-big ic y">✓</span></td>
+      <td>100% responsywny design na smartfonie</td>
+      <td><span class="note ok">Aplikacja zbudowana mobile-first z Tailwind CSS 4. Tabele, nawigacja i karty skalują się na wszystkich rozdzielczościach bez poziomego przewijania.</span></td>
+    </tr>
+    <tr>
+      <td>AC4</td><td><span class="ic-big ic n">—</span></td>
+      <td>Mikroanimacje zmiany kursu (kolor przy spadku)</td>
+      <td><span class="note gray">Cel Fazy 2 — wymaga danych strumieniowanych w czasie rzeczywistym (WebSocket/SSE). Architektura komponentów React jest gotowa na dodanie animacji zmian.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Tryb Ciemny (Dark Mode)</td>
+      <td><span class="note ok">Ciemny motyw jest domyślnym i jedynym motywem — zaprojektowany od zera jako dark-first (granatowe/czarne tło, kontrast WCAG AA). Brak potrzeby przełącznika — dark mode jest standardem UX w branży bukmacherskiej.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H9 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H9</span>
+    <div class="story-title">
+      Jako użytkownik chcę kliknąć przycisk, który przeniesie mnie bezpośrednio do kuponu na stronie bukmachera.
+      <div class="story-sub">→ deep linking — ograniczenia techniczne po stronie bukmacherów; Faza 2</div>
+    </div>
+    <span class="story-badge bd-arch">Infrastruktura gotowa</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic p">~</span></td>
+      <td>Przycisk "Obstaw" przy każdym bukmacherze w kalkulatorze</td>
+      <td><span class="note info">Każdy bukmacher posiada zdefiniowany obiekt z URL bazowym strony. Dodanie przycisku "Obstaw" to kwestia UI. Automatyczne głęboke linki do konkretnych meczów wymagają analizy URL-struktury każdego bukmachera osobno — zaplanowane w Fazie 2.</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic n">—</span></td>
+      <td>Automatyczne dodanie zdarzenia do kuponu (kupon elektroniczny)</td>
+      <td><span class="note gray">Cel Fazy 2+ — żaden z 10 polskich bukmacherów nie udostępnia publicznego API do tworzenia kuponów. Wymaga analizy schematów URL lub współpracy z bukmacherami.</span></td>
+    </tr>
+    <tr>
+      <td>AC3</td><td><span class="ic-big ic p">~</span></td>
+      <td>Link przynajmniej do podstrony wybranego meczu</td>
+      <td><span class="note info">Strony bukmacherów zostały zindeksowane przez scraper — znana jest struktura ich URL. Mapowanie wydarzeń na deep linki planowane jako pierwsze zadanie Fazy 2.</span></td>
+    </tr>
+    <tr>
+      <td>AC4</td><td><span class="ic-big ic n">—</span></td>
+      <td>Komunikat błędu przy wygasłej ofercie</td>
+      <td><span class="note gray">Zostanie dodany wraz z implementacją przycisków "Obstaw".</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic n">—</span></td>
+      <td>Automatyczne logowanie błędów przekierowania</td>
+      <td><span class="note gray">Cel Fazy 6 — monitoring z Sentry/LogRocket planowany w fazie skalowania produkcyjnego.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H10 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H10</span>
+    <div class="story-title">
+      Jako użytkownik posiadający konta tylko w wybranych serwisach, chcę filtrować wyniki wyszukiwania tylko dla moich bukmacherów.
+      <div class="story-sub">→ fundament w Supabase Auth gotowy; panel filtrów — Faza 2</div>
+    </div>
+    <span class="story-badge bd-arch">Fundament gotowy</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1–4</td><td><span class="ic-big ic p">~</span></td>
+      <td>Panel "Moi Bukmacherzy" z checkboxami, zachowane po zalogowaniu</td>
+      <td><span class="note info">System kont użytkowników w Supabase z RLS jest w pełni zbudowany. Tabela preferencji bukmacherów to jedno rozszerzenie schematu Supabase — architektura jest gotowa. Widok filtrowania planowany w Fazie 2.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic n">—</span></td>
+      <td>"Znajdź zamiennik" — alternatywny bukmacher z podobnym kursem</td>
+      <td><span class="note gray">Dane są dostępne: porównywarka /events już zestawia kursy wszystkich bukmacherów. Algorytm "zamiennika" można zbudować na tej bazie — zaplanowane w Fazie 2.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H11 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H11</span>
+    <div class="story-title">
+      Jako użytkownik chcący uniknąć limitów na kontach bukmacherskich, chcę zaokrąglania stawek i sugestii "pustych" zdarzeń do kuponu.
+      <div class="story-sub">→ rozszerzenie kalkulatora — Faza 3</div>
+    </div>
+    <span class="story-badge bd-arch">Zaplanowane w Fazie 3</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1–2</td><td><span class="ic-big ic p">~</span></td>
+      <td>Zaokrąglanie stawek do pełnych 10 PLN + podgląd zmiany zysku</td>
+      <td><span class="note info">Kalkulator wyświetla dokładne stawki — zaokrąglanie to dodatkowy tryb wyświetlania. Matematycznie proste do dodania jako opcja UI w kalkulatorze (Faza 3).</span></td>
+    </tr>
+    <tr>
+      <td>AC3–4</td><td><span class="ic-big ic n">—</span></td>
+      <td>Dodanie "pustego zdarzenia" rekreacyjnego i uwzględnienie w zysku</td>
+      <td><span class="note gray">Cel Fazy 3 — rozszerzenie kalkulatora o obsługę kuponów wielokrotnych z dodatkowym zdarzeniem kamuflującym.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic n">—</span></td>
+      <td>Przypominajka: nie wypłacaj zysku natychmiast</td>
+      <td><span class="note gray">UX "anti-limit coaching" — planowane jako część sekcji porad w Fazie 3.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ H12 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">H12</span>
+    <div class="story-title">
+      Jako użytkownik chcę mieć możliwość testowania działania aplikacji w środowisku demo.
+      <div class="story-sub">→ tryb demo ze statycznymi danymi — zrealizowany</div>
+    </div>
+    <span class="story-badge bd-most">Zrealizowana ✓</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>AC</th><th>Status</th><th>Kryterium akceptacji</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>AC1</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Środowisko demo z danymi bez konfiguracji</td>
+      <td><span class="note ok">Tryb demo ładuje się automatycznie gdy brak scrapera/klucza API — statyczne dane demonstracyjne umożliwiają pełną nawigację po wszystkich widokach aplikacji bez żadnej konfiguracji.</span></td>
+    </tr>
+    <tr>
+      <td>AC2</td><td><span class="ic-big ic y">✓</span></td>
+      <td>Dane demonstracyjne (nie produkcyjne) w trybie demo</td>
+      <td><span class="note ok">Dane demo to realistycznie wyglądające, ale statyczne fixtury — użytkownik uczy się na danych o podobnej strukturze do produkcyjnych.</span></td>
+    </tr>
+    <tr>
+      <td>AC3–4</td><td><span class="ic-big ic n">—</span></td>
+      <td>Wirtualne saldo + historia symulowanych kuponów z autentycznymi wynikami</td>
+      <td><span class="note gray">Cel Fazy 5 — wymaga integracji z API wyników sportowych. Architektura dziennika (Supabase) jest gotowa pod rozszerzenie o symulowane kupony.</span></td>
+    </tr>
+    <tr>
+      <td>AC5</td><td><span class="ic-big ic n">—</span></td>
+      <td>Banner zachęcający do zakupu pełnego dostępu</td>
+      <td><span class="note gray">Cel Fazy 5 (monetyzacja) — banner zostanie dodany gdy powstanie plan premium.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ HU1 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">HU1</span>
+    <div class="story-title">
+      Jako użytkownik chcę automatycznie lub ręcznie zapisywać zagrane surebety w wbudowanym dzienniku, abym mógł monitorować realny zysk bez zewnętrznych arkuszy.
+      <div class="story-sub">→ /journal — pełny CRUD w Supabase z RLS, statusy, statystyki</div>
+    </div>
+    <span class="story-badge bd-done">W pełni zrealizowana ✓</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>CRUD</th><th>Status</th><th>Funkcja</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td><span class="crud-label crud-c">C</span></td><td><span class="ic-big ic y">✓</span></td>
+      <td>Tworzenie nowego wpisu surebetu w dzienniku</td>
+      <td><span class="note ok">Formularz tworzenia wpisu dostępny w /journal. Ręczne wypełnienie kursów, stawek i bukmacherów. Dane zapisywane do Supabase (journal_entries) z Row Level Security — każdy użytkownik widzi tylko swoje wpisy.</span></td>
+    </tr>
+    <tr>
+      <td><span class="crud-label crud-r">R</span></td><td><span class="ic-big ic y">✓</span></td>
+      <td>Lista wszystkich rozegranych i trwających surebetów</td>
+      <td><span class="note ok">Widok /journal: pełna lista wpisów z datą, bukmacherami, kursami, stawkami, statusem i obliczonym zyskiem/stratą netto po podatku.</span></td>
+    </tr>
+    <tr>
+      <td><span class="crud-label crud-r">R</span></td><td><span class="ic-big ic y">✓</span></td>
+      <td>Statystyki sumaryczne (zyski, straty, ROI)</td>
+      <td><span class="note ok">Nagłówek dziennika pokazuje: łączny zysk netto, liczbę wygranych/przegranych/oczekujących zakładów, skuteczność. Wartości przeliczone z uwzględnieniem 12% podatku.</span></td>
+    </tr>
+    <tr>
+      <td><span class="crud-label crud-u">U</span></td><td><span class="ic-big ic y">✓</span></td>
+      <td>Ręczna zmiana statusu: Wygrany / Przegrany / Anulowany</td>
+      <td><span class="note ok">Rozwijane menu statusu przy każdym wpisie — zmiana zapisywana do Supabase w czasie rzeczywistym, statystyki aktualizują się natychmiast.</span></td>
+    </tr>
+    <tr>
+      <td><span class="crud-label crud-d">D</span></td><td><span class="ic-big ic y">✓</span></td>
+      <td>Trwałe usunięcie wpisu z dziennika</td>
+      <td><span class="note ok">Przycisk usunięcia z potwierdzeniem — chroni przed przypadkowym usunięciem. Trwałe usunięcie z Supabase gwarantuje spójność statystyk.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ HU2 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">HU2</span>
+    <div class="story-title">
+      Jako użytkownik z wieloma kontami, chcę podglądać stan moich środków u poszczególnych bukmacherów przed obstawieniem surebetu.
+      <div class="story-sub">→ panel "Moje salda" — schemat Supabase gotowy; UI — Faza 2</div>
+    </div>
+    <span class="story-badge bd-arch">Architektura gotowa</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>CRUD</th><th>Status</th><th>Funkcja</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>Wszystkie</td><td><span class="ic-big ic p">~</span></td>
+      <td>CRUD sald bukmacherów per użytkownik</td>
+      <td><span class="note info">System kont Supabase z RLS stanowi kompletny fundament pod panel sald. Tabela bookmaker_balances to jedno rozszerzenie schematu. Integracja z kalkulatorem (ostrzeżenia o niewystarczającym saldzie) zaplanowana jako pierwsze rozszerzenie w Fazie 2 — dane z kalkulatora (stawki) i dane sald są już w jednym systemie.</span></td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ HU3 ══ -->
+<div class="story">
+  <div class="story-header">
+    <span class="story-num">HU3</span>
+    <div class="story-title">
+      Jako użytkownik chcę mieć szybki dostęp do kalkulatora kontrowania (stawki ratunkowej) gdy bukmacher zablokuje rynek lub obniży kurs.
+      <div class="story-sub">→ "Tryb ratunkowy" — rozszerzenie kalkulatora; Faza 3</div>
+    </div>
+    <span class="story-badge bd-arch">Zaplanowane w Fazie 3</span>
+  </div>
+  <table class="ac-table">
+    <tr><th>CRUD</th><th>Status</th><th>Funkcja</th><th>Realizacja w projekcie</th></tr>
+    <tr>
+      <td>Wszystkie</td><td><span class="ic-big ic p">~</span></td>
+      <td>Kalkulator "hedge bet" — stawka ratunkowa przy zmienionym kursie</td>
+      <td><span class="note info">Matematyka "hedge betu" (minimalizacja straty przy zmianie jednego kursu) jest bezpośrednim rozszerzeniem istniejącego silnika arbitrażu (src/lib/arbitrage.ts). Fundament kalkulatora pozwala na dodanie trybu ratunkowego bez przepisywania logiki — nowy widok, te same obliczenia w nowym scenariuszu. Planowane w Fazie 3 razem z innymi zaawansowanymi narzędziami kalkulatora.</span></td>
+    </tr>
+  </table>
+</div>
+
+</div>
+</body>
+</html>

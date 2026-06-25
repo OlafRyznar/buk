@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>BukScan - Wykorzystanie AI w projekcie</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Calibri', 'Segoe UI', Arial, sans-serif; background: #fff; color: #000; font-size: 12pt; line-height: 1.5; }
+.page { max-width: 820px; margin: 0 auto; padding: 48px 56px 64px; }
+
+.header { text-align: center; margin-bottom: 24px; padding-bottom: 14px; border-bottom: 2px solid #000; }
+.header h1 { font-size: 20pt; font-weight: 700; }
+.header .sub { font-size: 11pt; color: #444; margin-top: 6px; }
+
+h2.section-title { font-size: 15pt; font-weight: 700; margin-top: 28px; margin-bottom: 10px; color: #1f3864; border-bottom: 1px solid #bbb; padding-bottom: 4px; }
+h3.sub-title { font-size: 12.5pt; font-weight: 700; margin-top: 18px; margin-bottom: 6px; color: #1f3864; }
+
+p { margin-bottom: 10px; text-align: justify; }
+ul { margin: 0 0 12px 0; padding-left: 26px; }
+li { margin-bottom: 4px; }
+
+.intro { margin-bottom: 18px; }
+
+/* TOOLS */
+.tool-block { margin-bottom: 16px; }
+.tool-block h3 { margin-bottom: 4px; }
+.tool-block .role { font-size: 10.5pt; color: #555; font-style: italic; margin-bottom: 6px; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; margin: 8px 0 18px; font-size: 10.5pt; }
+th { background: #1f3864; color: #fff; padding: 7px 9px; text-align: left; font-weight: 600; border: 1px solid #1f3864; }
+td { padding: 6px 9px; border: 1px solid #bbb; vertical-align: top; }
+tr:nth-child(even) td { background: #f2f4f8; }
+
+/* STATS */
+.stats { width: 100%; border-collapse: collapse; margin: 8px 0 20px; }
+.stats td { text-align: center; border: 1px solid #bbb; padding: 12px 8px; width: 25%; }
+.stat-n { font-size: 20pt; font-weight: 700; color: #1f3864; }
+.stat-l { font-size: 10pt; color: #444; margin-top: 4px; }
+
+.note { background: #f2f4f8; border: 1px solid #ccc; border-left: 4px solid #1f3864; padding: 12px 16px; margin: 14px 0; font-size: 11pt; }
+.note strong { color: #1f3864; }
+
+@media print {
+  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .page { padding: 0; }
+  table, .tool-block { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="header">
+  <h1>BukScan - Wykorzystanie sztucznej inteligencji w projekcie</h1>
+  <div class="sub">Przegląd narzędzi AI, modeli językowych i generatywnych użytych podczas budowy aplikacji | Czerwiec 2026</div>
+</div>
+
+<p class="intro">
+  Projekt BukScan powstawał z dużym wykorzystaniem narzędzi AI na różnych etapach pracy - od planowania architektury i pisania kodu, przez generowanie treści i grafik, aż po sprawdzanie logiki biznesowej. W tym dokumencie opisujemy, jakich modeli i narzędzi używaliśmy, do jakich zadań oraz dlaczego do konkretnego problemu dobieraliśmy dany model lub poziom reasoning effort. Wybór nie był przypadkowy - zależał od trudności zadania i tego, ile tokenów dane zadanie zużyje, a nie od ślepego wybierania najmocniejszego modelu do wszystkiego.
+</p>
+
+<h2 class="section-title">Narzędzia AI użyte w projekcie</h2>
+
+<div class="tool-block">
+  <h3 class="sub-title">Claude Code (Pro)</h3>
+  <div class="role">Główne narzędzie deweloperskie - praca w terminalu i edytorze</div>
+  <p>To było nasze podstawowe środowisko pracy przez większość projektu. Claude Code działał jak agent bezpośrednio w terminalu - sam czytał pliki, edytował kod, uruchamiał komendy, czytał błędy i proponował poprawki, bez ręcznego kopiowania kodu w obie strony. W Claude Code korzystaliśmy z modeli Claude Opus 4.8, Opus 4.7 oraz Sonnet 4.6, dobierając je do trudności zadania.</p>
+  <ul>
+    <li>Projektowanie i implementacja architektury Next.js (App Router, SSR)</li>
+    <li>Pisanie scraperów Playwright dla 10 bukmacherów</li>
+    <li>Budowa silnika arbitrażu z obsługą podatku (src/lib/arbitrage.ts)</li>
+    <li>Integracja Supabase (autentykacja, RLS, journal_entries)</li>
+    <li>Debugowanie błędów parsowania DOM i normalizacji nazw drużyn</li>
+    <li>Refaktoryzacja i optymalizacja komponentów React/TypeScript</li>
+  </ul>
+</div>
+
+<div class="tool-block">
+  <h3 class="sub-title">GitHub Copilot (VS Code)</h3>
+  <div class="role">Autouzupełnianie i chat inline w edytorze</div>
+  <p>Copilota używaliśmy równolegle z Claude Code, głównie w VS Code do szybkiego autouzupełniania i drobnych poprawek inline. Przydawał się zwłaszcza przy powtarzalnych fragmentach kodu - typach TypeScript, komponentach Tailwind, handlerach API. W Copilocie korzystaliśmy z różnych modeli w zależności od potrzeby: GPT 5.4 Codex, GPT 5.5, a także modeli Claude (Opus 4.8, Opus 4.7, Sonnet 4.6).</p>
+  <ul>
+    <li>Autouzupełnianie typów TypeScript i interfejsów</li>
+    <li>Generowanie boilerplate komponentów React</li>
+    <li>Szybkie poprawki w CSS/Tailwind (klasy, responsywne breakpointy)</li>
+    <li>Uzupełnianie powtarzalnych wzorców (np. obsługa błędów w API routes)</li>
+    <li>Chat inline do tłumaczenia fragmentów kodu bez zmiany kontekstu</li>
+  </ul>
+</div>
+
+<div class="tool-block">
+  <h3 class="sub-title">Gemini (Google)</h3>
+  <div class="role">Koncepcja, research, weryfikacja pomysłów</div>
+  <p>Gemini wykorzystywaliśmy głównie na etapie planowania i koncepcji - kiedy potrzebowaliśmy szybko sprawdzić pomysł, porównać podejścia albo zrobić research na temat algorytmów bez wciągania w to całego kontekstu projektu. Używaliśmy modeli Gemini 3.1 Pro (do trudniejszych pytań) oraz Gemini 3.5 Flash (do szybkich, prostszych zapytań).</p>
+  <ul>
+    <li>Research: mechanizmy antybotowe polskich bukmacherów</li>
+    <li>Porównanie podejść do normalizacji nazw drużyn (tokenowe vs. Levenshtein)</li>
+    <li>Koncepcja algorytmu filtrowania watchlisty (near-arbitrage)</li>
+    <li>Weryfikacja matematyki arbitrażu z uwzględnieniem podatku od obrotu</li>
+    <li>Research: dostępność publicznych API polskich bukmacherów</li>
+  </ul>
+</div>
+
+<div class="tool-block">
+  <h3 class="sub-title">Nano Banana Pro (Google)</h3>
+  <div class="role">Generowanie grafik - tła aplikacji</div>
+  <p>Do stworzenia tła i grafik aplikacji użyliśmy generatora obrazów Nano Banana Pro od Google. Model dobrze radzi sobie z realistycznymi obrazami w wysokiej jakości i pozwala dość precyzyjnie sterować stylem przez prompt.</p>
+  <ul>
+    <li>Generowanie ciemnych, abstrakcyjnych tła aplikacji (dark-themed gradients)</li>
+    <li>Tworzenie grafik hero section - stadion, piłka, efekty świetlne</li>
+    <li>Obrazy dla trybu demo - wizualizacje bukmacherów i kursów</li>
+    <li>Eksport w formatach WebP (optymalizacja wydajności) i PNG</li>
+  </ul>
+</div>
+
+<h2 class="section-title">Dobór modeli i poziomu reasoning effort do zadań</h2>
+<table>
+  <tr>
+    <th>Model</th>
+    <th>Effort</th>
+    <th>Typ zadań</th>
+    <th>Przykłady użycia w projekcie</th>
+  </tr>
+  <tr>
+    <td>Claude Opus 4.8</td>
+    <td>HIGH / MAX</td>
+    <td>Najtrudniejsze zadania architektoniczne i algorytmiczne</td>
+    <td>Projektowanie silnika arbitrażu z obsługą podatku; algorytm scalania wydarzeń między bukmacherami (normalizacja tokenowa &ge;65%); debugowanie złożonych błędów scrapera Playwright; decyzje architektoniczne Next.js App Router</td>
+  </tr>
+  <tr>
+    <td>Claude Opus 4.7</td>
+    <td>HIGH</td>
+    <td>Złożone zadania wymagające głębszego rozumowania</td>
+    <td>Weryfikacja matematyki surebetu po podatku, analiza edge-case'ów w normalizacji nazw drużyn (np. "DR Kongo" w różnych zapisach), planowanie schematu Supabase z RLS</td>
+  </tr>
+  <tr>
+    <td>Claude Sonnet 4.6</td>
+    <td>MEDIUM</td>
+    <td>Standardowe zadania implementacyjne - dominujący model</td>
+    <td>Pisanie komponentów React/TypeScript, konfiguracja Tailwind CSS, implementacja endpointów Next.js API, integracja Supabase Auth (Google OAuth), budowa widoków /events, /margins, /journal, /calculator, refaktoryzacja istniejących komponentów</td>
+  </tr>
+  <tr>
+    <td>Claude Sonnet 4.6</td>
+    <td>LOW</td>
+    <td>Proste, powtarzalne zadania - szybkie odpowiedzi</td>
+    <td>Poprawki stylistyczne CSS/Tailwind, zmiana nazw zmiennych, dodawanie typów TypeScript do istniejących funkcji, proste formatowanie danych, drobne poprawki UX, generowanie dokumentacji inline</td>
+  </tr>
+  <tr>
+    <td>GitHub Copilot (GPT 5.4 Codex / GPT 5.5 / Claude)</td>
+    <td>LOW</td>
+    <td>Autouzupełnianie inline, chat w VS Code</td>
+    <td>Uzupełnianie powtarzalnych wzorców kodu, autouzupełnianie typów TS, boilerplate komponentów, szybkie pytania o API bez przełączania kontekstu z edytora</td>
+  </tr>
+  <tr>
+    <td>Gemini 3.1 Pro / 3.5 Flash</td>
+    <td>MEDIUM / LOW</td>
+    <td>Research, koncepcje, weryfikacja niezależna</td>
+    <td>Research techniczny (antyboty, scraping polskich bukmacherów), porównanie algorytmów normalizacji, weryfikacja matematyki arbitrażu niezależna od Claude, brainstorming funkcji produktu. 3.1 Pro do trudniejszych pytań, 3.5 Flash do szybkich</td>
+  </tr>
+  <tr>
+    <td>Nano Banana Pro</td>
+    <td>-</td>
+    <td>Generowanie obrazów, zasoby wizualne</td>
+    <td>Tła aplikacji w stylu dark UI, grafiki hero, zdjęcia dla trybu demo. Promptowanie w języku angielskim z opisem stylu (dark, cinematic, stadium lights, abstract bokeh)</td>
+  </tr>
+</table>
+
+<h2 class="section-title">Typowy workflow deweloperski z AI</h2>
+<p>Poniżej opisujemy, jak w praktyce wyglądała współpraca człowiek-AI przy budowie BukScan, krok po kroku.</p>
+
+<h3 class="sub-title">1. Koncepcja i research (Gemini 3.1 Pro / 3.5 Flash)</h3>
+<p>Research: jak działają antyboty polskich bukmacherów, jakie podejścia do normalizacji nazw drużyn sprawdzają się w praktyce, jak liczy się arbitraż z podatkiem od obrotu. Gemini służył też jako "drugi głos" do niezależnej weryfikacji matematyki przed implementacją. Trudniejsze pytania szły do 3.1 Pro, szybkie do 3.5 Flash.</p>
+
+<h3 class="sub-title">2. Projektowanie architektury - najtrudniejsze decyzje (Claude Opus 4.8 / 4.7, effort HIGH)</h3>
+<p>Decyzje architektoniczne: struktura scraperów (generyczny ekstraktor vs. dedykowane strategie), schemat danych w Supabase (RLS, journal_entries), logika silnika arbitrażu z obsługą wyjątków podatkowych. Tu trafiał też problem stabilnych ID wydarzeń niezależnych od scrapingu. Te zadania były na tyle złożone i czasochłonne, że opłacało się przeznaczyć na nie więcej tokenów i wyższy effort.</p>
+
+<h3 class="sub-title">3. Implementacja głównych funkcji (Claude Sonnet 4.6, effort MEDIUM, w Claude Code)</h3>
+<p>Pisanie komponentów React, endpointów API, integracja Supabase Auth, budowa widoków. Claude Code działał jako agent - sam czytał pliki projektu, edytował kod, uruchamiał testy i interpretował błędy. To było dominujące środowisko przez cały projekt.</p>
+
+<h3 class="sub-title">4. Praca równoległa w VS Code (GitHub Copilot - GPT 5.4 Codex / GPT 5.5 / Claude)</h3>
+<p>Przy edycji plików bezpośrednio w VS Code korzystaliśmy z Copilota do szybkich poprawek Tailwind, typów TypeScript i boilerplate. Chat Copilota inline służył do pytań o konkretne fragmenty bez wychodzenia z edytora. Model dobieraliśmy zależnie od tego, czy chodziło o proste uzupełnienie, czy o coś bardziej wymagającego.</p>
+
+<h3 class="sub-title">5. Drobne poprawki i refaktoryzacja (Claude Sonnet 4.6, effort LOW)</h3>
+<p>Poprawki stylistyczne, zmiana nazw, formatowanie, drobne zmiany UX. Effort "low" wyraźnie przyspiesza odpowiedź przy prostych zadaniach - używanie wysokiego effort do zmian w CSS byłoby marnowaniem czasu i tokenów.</p>
+
+<h3 class="sub-title">6. Debugowanie złożonych błędów (Claude Opus 4.8, effort HIGH/MAX)</h3>
+<p>Najtrudniejsze błędy (parsowania DOM, nieprawidłowe scalanie meczów o tej samej nazwie, ale różnym czasie, edge-case'y podatkowe) kierowaliśmy do Opus z wysokim effortem. Model z większym budżetem reasoning lepiej radził sobie z wieloetapowym debugowaniem.</p>
+
+<h3 class="sub-title">7. Generowanie zasobów wizualnych (Nano Banana Pro)</h3>
+<p>Tła i grafiki aplikacji generowane przez Nano Banana Pro. Prompty opisowe po angielsku: dark UI aesthetic, stadium atmosphere, bokeh lights, cinematic color grading. Eksport do WebP dla szybszego ładowania strony.</p>
+
+<h2 class="section-title">Zasada doboru modelu do trudności zadania</h2>
+<div class="note">
+  <p><strong>Najważniejsza obserwacja:</strong> nie każde zadanie wymaga najmocniejszego modelu. Używanie Claude Opus z effort MAX do prostej zmiany koloru przycisku jest jak używanie młota do wbicia pinezki - droższe (więcej tokenów), wolniejsze i zwyczajnie niepotrzebne. Dlatego model i poziom effort dobieraliśmy świadomie, pod trudność zadania i jego koszt w tokenach, a nie wybieraliśmy najmocniejszego modelu z automatu.</p>
+  <p style="margin-bottom:0">W praktyce wyglądało to tak:</p>
+</div>
+<ul>
+  <li><strong>Opus 4.8 / 4.7 (effort HIGH/MAX)</strong> - decyzje architektoniczne, algorytmy, najtrudniejsze błędy. Model "myśli" dłużej i głębiej, co ma sens przy wieloetapowych problemach logicznych, mimo wyższego kosztu w tokenach.</li>
+  <li><strong>Sonnet 4.6 (effort MEDIUM)</strong> - standardowa implementacja, komponenty, integracje. Dobry stosunek jakości do prędkości - to był model używany przez większość czasu projektu.</li>
+  <li><strong>Sonnet 4.6 (effort LOW)</strong> - proste poprawki, CSS, typy. Odpowiedź prawie natychmiastowa, a jakość w zupełności wystarczająca.</li>
+  <li><strong>Copilot inline (GPT 5.4 Codex / GPT 5.5 / Claude)</strong> - autouzupełnianie bez przerywania pracy w edytorze.</li>
+  <li><strong>Gemini 3.1 Pro / 3.5 Flash</strong> - niezależna weryfikacja i research, bez "zaślepienia" kontekstem projektu z Claude.</li>
+</ul>
+
+<h2 class="section-title">Wnioski z używania AI w projekcie</h2>
+<h3 class="sub-title">Co AI zmieniło w procesie budowy projektu</h3>
+<ul>
+  <li><strong>Prędkość prototypowania:</strong> pierwsze działające widoki powstawały w godzinach, nie w dniach. AI generowało boilerplate i strukturę, dzięki czemu mogliśmy skupić się na logice biznesowej.</li>
+  <li><strong>Mniej błędów:</strong> Claude Code przy edycji kodu od razu wskazywał błędy typów TypeScript i niezgodności z istniejącym kodem, bez uruchamiania pełnego buildu.</li>
+  <li><strong>Niezależna weryfikacja:</strong> używanie Gemini jako "drugiego głosu" do sprawdzenia matematyki arbitrażu zmniejszyło ryzyko błędu logicznego w kluczowym silniku aplikacji.</li>
+  <li><strong>Generowanie grafik:</strong> Nano Banana Pro pozwolił uniknąć kupowania stock photo albo angażowania grafika - tła powstawały w kilka minut od promptu.</li>
+  <li><strong>Dobór narzędzia do zadania:</strong> mieszanie modeli (Opus do trudnych, Sonnet do rutynowych, Copilot do inline) okazało się skuteczniejsze niż używanie jednego modelu do wszystkiego, również pod kątem kosztu w tokenach.</li>
+  <li><strong>Ograniczenia:</strong> AI nie zastąpiło wiedzy domenowej - zrozumienie mechaniki surebetów, polskiego prawa podatkowego (12% od obrotu) i zachowania scraperów wymagało własnej analizy i decyzji projektowych.</li>
+</ul>
+
+</div>
+</body>
+</html>

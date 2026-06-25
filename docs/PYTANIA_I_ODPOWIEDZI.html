@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>BukScan — kompletna dokumentacja projektu</title>
+<style>
+  @page { size: A4; margin: 22mm 18mm 22mm 18mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Calibri, Arial, sans-serif;
+    color: #1f2430;
+    line-height: 1.55;
+    font-size: 10.6pt;
+  }
+  .cover {
+    text-align: center;
+    padding-top: 55mm;
+    page-break-after: always;
+  }
+  .cover h1 { font-size: 32pt; margin-bottom: 6px; color: #0f172a; }
+  .cover .subtitle { font-size: 13pt; color: #475569; margin-top: 4px; }
+  .cover .badge {
+    display: inline-block; margin-top: 28px; padding: 6px 18px;
+    border-radius: 999px; background: #0ea5e9; color: white;
+    font-size: 10pt; letter-spacing: 0.5px;
+  }
+  .cover .meta { margin-top: 40px; font-size: 9.5pt; color: #94a3b8; }
+  .toc { page-break-after: always; }
+  .toc h2 { margin-top: 0; }
+  .toc ol { padding-left: 22px; }
+  .toc li { margin-bottom: 6px; font-size: 11pt; }
+  h1 { font-size: 18pt; color: #0f172a; border-bottom: 2px solid #0ea5e9; padding-bottom: 6px; margin-top: 0; }
+  h2 {
+    font-size: 13.5pt; color: #0f172a; margin-top: 26px; padding: 6px 10px;
+    background: #eff6ff; border-left: 4px solid #0ea5e9; border-radius: 4px;
+  }
+  h3 { font-size: 11.5pt; color: #0c4a6e; margin-top: 18px; margin-bottom: 4px; }
+  p.question {
+    font-weight: 700; color: #0c4a6e; background: #f0f9ff; padding: 8px 12px;
+    border-radius: 6px; margin-top: 16px; margin-bottom: 6px;
+  }
+  p.question::before { content: "P"; color: #0ea5e9; margin-right: 4px; }
+  p, li { color: #1f2430; }
+  ul { margin-top: 6px; padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  strong { color: #0c4a6e; }
+  code {
+    background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 3px;
+    padding: 1px 5px; font-family: Consolas, monospace; font-size: 9pt; color: #be185d;
+  }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 12px 14px; border-radius: 6px;
+    font-family: Consolas, monospace; font-size: 9.5pt; overflow-x: auto; white-space: pre-wrap;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 9.8pt; }
+  th, td { border: 1px solid #e2e8f0; padding: 6px 9px; text-align: left; vertical-align: top; }
+  th { background: #0f172a; color: white; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  .section { page-break-inside: avoid; }
+  .note {
+    background: #fff7ed; border-left: 4px solid #f59e0b; padding: 8px 12px;
+    border-radius: 4px; margin: 10px 0; font-size: 9.8pt;
+  }
+  .footer-note { margin-top: 40px; font-size: 9pt; color: #94a3b8; text-align: center; }
+  .small { font-size: 9pt; color: #64748b; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>BukScan</h1>
+  <div class="subtitle">Kompletna dokumentacja projektu — pytania i odpowiedzi od A do Z</div>
+  <div class="badge">ARCHITEKTURA · SCRAPER · ARBITRAŻ · OGRANICZENIA · PLANY</div>
+  <div class="meta">Skaner arbitrażu bukmacherskiego na polskim rynku<br>Czerwiec 2026</div>
+</div>
+
+<div class="toc">
+<h2>Spis treści</h2>
+<ol>
+  <li>Wprowadzenie i cel projektu</li>
+  <li>Matematyka arbitrażu bukmacherskiego</li>
+  <li>Mapa funkcji — opis każdej strony aplikacji</li>
+  <li>Architektura systemu i tryby wdrożenia</li>
+  <li>Scraper kursów — pełny opis techniczny</li>
+  <li>Silnik arbitrażu — algorytmy i podatek</li>
+  <li>System powiadomień i alertów</li>
+  <li>Warstwa danych (Supabase) i bezpieczeństwo</li>
+  <li>API aplikacji</li>
+  <li>Zmienne środowiskowe</li>
+  <li>Stos technologiczny — pełna lista</li>
+  <li>Co udało się zrobić (zakres działający)</li>
+  <li>Co nie udało się zrobić / czego zabrakło</li>
+  <li>Główne ograniczenia projektu</li>
+  <li>Decyzje produktowe i ich uzasadnienie</li>
+  <li>Plany na przyszłość</li>
+  <li>Podsumowanie</li>
+</ol>
+</div>
+
+<div class="section">
+<h1>1. Wprowadzenie i cel projektu</h1>
+
+<p class="question">Co to jest BukScan?</p>
+<p>BukScan to aplikacja webowa (Next.js, App Router, TypeScript) do wykrywania okazji arbitrażu bukmacherskiego (surebetów) na polskim rynku bukmacherskim. Pobiera kursy bezpośrednio ze stron 10 polskich bukmacherów metodą web scrapingu (Playwright), porównuje je między sobą i wskazuje sytuacje, w których postawienie odpowiednio rozłożonych stawek na wszystkie możliwe wyniki meczu gwarantuje zysk niezależnie od wyniku sportowego.</p>
+
+<p class="question">Dlaczego nie użyto gotowego API bukmacherskiego (np. The Odds API)?</p>
+<p>Projekt zaczynał się od integracji z The Odds API (widoczne w kodzie jako <code>src/lib/odds-api.ts</code> i tryb bez klucza = demo), ale to API nie obejmuje polskich bukmacherów (STS, Superbet, Fortuna itd.) — tylko zagraniczne marki. Skoro celem jest rynek polski, jedynym sposobem dotarcia do realnych kursów krajowych firm było napisanie własnego scrapera DOM. Adapter do The Odds API pozostał w kodzie jako alternatywne źródło danych (włączane ustawieniem zmiennej <code>ODDS_API_KEY</code>), ale w produkcji aplikacja korzysta ze scrapera.</p>
+
+<p class="question">Dla kogo jest ta aplikacja?</p>
+<p>Dla osób grających w zakłady wzajemne w Polsce, które chcą:</p>
+<ul>
+  <li>automatycznie wykrywać surebety bez ręcznego porównywania kursów u 10 bukmacherów na raz,</li>
+  <li>porównywać, który bukmacher daje aktualnie najwyższy kurs na dany wynik,</li>
+  <li>mieć kalkulator do ręcznego liczenia podziału stawek przy własnoręcznie znalezionych okazjach,</li>
+  <li>śledzić historię zakładów (dziennik) i realną rentowność po odliczeniu 12% podatku,</li>
+  <li>otrzymywać powiadomienia e-mail o zbliżających się meczach lub o przekroczeniu zadanego kursu.</li>
+</ul>
+</div>
+
+<div class="section">
+<h1>2. Matematyka arbitrażu bukmacherskiego</h1>
+
+<p class="question">Na czym polega arbitraż (surebet)?</p>
+<p>Arbitraż zachodzi, gdy suma odwrotności najlepszych dostępnych kursów na wszystkie wyniki tego samego zdarzenia (u różnych bukmacherów) jest mniejsza niż 1:</p>
+<pre>1/kurs_1 + 1/kurs_X + 1/kurs_2 &lt; 1</pre>
+<p>Zysk procentowy: <code>(1 / suma_odwrotności − 1) × 100</code>. W praktyce marża wbudowana przez bukmacherów sprawia, że ta suma jest zwykle &gt; 1 — okazja powstaje tylko wtedy, gdy różni bukmacherzy wycenią to samo zdarzenie inaczej.</p>
+
+<p class="question">Jak dokładnie liczone są stawki na poszczególnych wyników?</p>
+<p>Funkcja <code>calculateArbitrageStakes</code> (<code>src/lib/arbitrage.ts</code>) dzieli całkowitą stawkę proporcjonalnie do odwrotności kursu każdego wyniku: <code>stawka_i = stawka_calkowita × (1/kurs_i) / suma_odwrotnosci</code>. Taki rozkład gwarantuje identyczny zwrot bez względu na to, który wynik faktycznie zajdzie.</p>
+
+<p class="question">Jak działa wykrywanie arbitrażu w skali całej bazy wydarzeń?</p>
+<p><code>findArbitrageForEvent</code> przegląda każdy rynek (market) danego wydarzenia, bierze najlepszy kurs każdego możliwego wyniku (niezależnie od tego, który bukmacher go daje), przelicza go na kurs netto (po podatku) i sprawdza warunek arbitrażu. <code>findAllArbitrages</code> robi to dla wszystkich wydarzeń i sortuje wynik malejąco po procentowym zysku. Każda znaleziona okazja dostaje deterministyczne ID w formacie <code>{eventId}-{marketKey}</code>.</p>
+
+<p class="question">Czym jest „watchlista” (near-arbitrage) i jak liczony jest kurs docelowy?</p>
+<p><code>findNearArbitrageForEvent</code> szuka wydarzeń, których suma odwrotności kursów netto jest tylko odrobinę powyżej 1 (domyślny próg: 4%, w warstwie produktowej <code>data-service.ts</code> dodatkowo ograniczony do 3%). Dla każdego wyniku liczy, ile pozostałej "implikowanej probability" zostaje po odjęciu jego własnego udziału, a następnie wylicza <code>targetNetOdds = 1 / (1 - remainingImpliedProbability)</code> — minimalny kurs netto, który zamieniłby sytuację w pełny surebet. Funkcja <code>grossOddsForNet</code> przelicza to z powrotem na kurs brutto (uwzględniając, czy dany bukmacher jest bez podatku), żeby użytkownik widział realną liczbę, jaką musi zobaczyć na stronie bukmachera. Wybierany jest wariant wymagający najmniejszej zmiany kursu (<code>requiredOddsChangePercent</code>).</p>
+
+<p class="question">Jak liczona jest marża bukmachera?</p>
+<p><code>calculateMargin(odds)</code> sumuje odwrotności wszystkich kursów oferowanych przez jednego bukmachera na dany rynek i odejmuje 100% — to jest jego rzeczywisty narzut. W <code>getBookmakerMargins</code> (<code>data-service.ts</code>) margże są agregowane per bukmacher i per kategoria sportu (piłka klubowa, Mistrzostwa Świata, koszykówka), z odrzuceniem wartości poza zakresem [-2%, 25%] jako artefaktów błędnego parsowania.</p>
+
+<p class="question">Co to jest "hedge stake" i gdzie jest używany?</p>
+<p><code>calculateHedgeStake(originalStake, originalOdds, hedgeOdds)</code> liczy, jaką stawkę trzeba postawić na przeciwny wynik u innego bukmachera, żeby zabezpieczyć (zhedgować) zakład już postawiony — niezależnie od tego, czy pierwotna sytuacja była pełnym surebetem. To pomocnicza funkcja matematyczna w bibliotece arbitrażu, dostępna do wykorzystania w kalkulatorze/strategiach.</p>
+</div>
+
+<div class="section">
+<h1>3. Mapa funkcji — opis każdej strony aplikacji</h1>
+
+<table>
+<tr><th>Strona (route)</th><th>Opis</th></tr>
+<tr><td><code>/</code> — Dashboard</td><td>Szybki przegląd: liczba surebetów, rynki bliskie progu, średni profit, lista nadchodzących wydarzeń, spersonalizowane powitanie zalogowanego użytkownika.</td></tr>
+<tr><td><code>/arbitrage</code></td><td>Pełna lista aktualnych surebetów z rozkładem stawek i gwarantowanym zwrotem po podatku, plus sekcja watchlisty (near-arbitrage).</td></tr>
+<tr><td><code>/events</code> i <code>/events/[id]</code></td><td>Przeglądarka wszystkich zebranych wydarzeń z filtrowaniem po sporcie/lidze i sortowaniem po czasie startu; widok szczegółowy pokazuje pełne zestawienie kursów wszystkich bukmacherów obok siebie dla danego meczu.</td></tr>
+<tr><td><code>/kalkulator</code></td><td>Ręczny kalkulator arbitrażu — użytkownik wpisuje własne kursy i bukmacherów, kalkulator liczy rozkład stawek i ewentualny gwarantowany zysk; wynik można zapisać do dziennika.</td></tr>
+<tr><td><code>/margins</code></td><td>Tabela realnie obliczonych marż każdego bukmachera na podstawie faktycznie zescrapowanych kursów (nie deklaracji marketingowych), z podziałem na piłkę nożną klubową, Mistrzostwa Świata i koszykówkę.</td></tr>
+<tr><td><code>/account</code></td><td>Panel użytkownika z zakładkami: Przegląd (dziennik + statystyki), Bukmacherzy (lista posiadanych kont), Powiadomienia (ustawienia e-mail), Salda (wirtualne saldo na koncie u każdego bukmachera), Bezpieczeństwo, Subskrypcja (plan premium).</td></tr>
+<tr><td><code>/notifications</code></td><td>Historia powiadomień systemowych: nowe surebety, okazje wchodzące w próg (pre-surebet), zakończone zakłady, wygasłe okazje.</td></tr>
+<tr><td><code>/groups</code></td><td>Tabele grup Mistrzostw Świata 2026 (dane realne, wpisane ręcznie — patrz sekcja 5) wraz z meczami i kursami zebranymi dla reprezentacji.</td></tr>
+<tr><td><code>/strategies</code></td><td>Edukacyjne narzędzia: kalkulator Value Bet (porównanie kursu bukmachera z własnym oszacowaniem prawdopodobieństwa, Expected Value, rekomendacja stawki według kryterium Kelly'ego) i inne strategie zakładowe.</td></tr>
+<tr><td><code>/roadmap</code></td><td>Wizualna roadmapa projektu z podziałem na 6 faz, stanem ukończenia każdego zadania i celami biznesowymi (liczba bukmacherów, opóźnienie danych, liczba sportów).</td></tr>
+<tr><td><code>/login</code>, <code>/register</code>, <code>/auth/callback</code></td><td>Logowanie e-mail/hasło i Google OAuth (Supabase Auth), strona callback obsługuje powrót z OAuth.</td></tr>
+<tr><td><code>/settings</code></td><td>Przekierowanie/skrót do ustawień w panelu konta.</td></tr>
+</table>
+
+<p class="question">Czym jest kalkulator Value Bet w <code>/strategies</code>?</p>
+<p>To narzędzie nie liczy arbitrażu, a tzw. "value betting": użytkownik podaje kurs bukmachera i własne oszacowanie prawdopodobieństwa wygranej, a kalkulator liczy "kurs sprawiedliwy" (<code>100/prawdopodobieństwo</code>), Expected Value (<code>EV = probability × kurs − 1</code>) oraz rekomendowaną stawkę według kryterium Kelly'ego: <code>kelly = max(0, (kurs×p − 1)/(kurs − 1)) × stawka</code>. To jedyny fragment Fazy 4 roadmapy ("Kelly Criterion kalkulator"), który już został zaimplementowany — wcześniej niż reszta tej fazy.</p>
+
+<p class="question">Co to za dane w sekcji Mistrzostw Świata 2026 (<code>/groups</code>)?</p>
+<p>Dane tabel grupowych i wyników pierwszej kolejki są wpisane ręcznie w <code>src/lib/world-cup-groups.ts</code>, a nie scrapowane — w komentarzu w kodzie autor wyjaśnia, że nie ma wiarygodnego źródła do automatycznego scrapowania wyników turnieju, a zgadywanie przypisania grup byłoby tym samym problemem co "fałszywy arbitraż": pewne siebie, ale błędne dane. Plik zawiera też słownik aliasów nazw reprezentacji (np. „Korea Południowa” ↔ „Korea Republic” / „South Korea”), żeby dopasować je do nazw używanych przez scrapowanych bukmacherów.</p>
+</div>
+
+<div class="section">
+<h1>4. Architektura systemu i tryby wdrożenia</h1>
+
+<p class="question">Czy aplikacja działa jako jeden serwer, czy to coś bardziej złożonego?</p>
+<p>To <strong>hybrydowe wdrożenie złożone z dwóch równoległych trybów</strong>, co nie jest opisane w README, ale wynika z plików konfiguracyjnych w repo:</p>
+<ul>
+  <li><strong>Pełny serwer Next.js (SSR)</strong> — <code>ecosystem.config.cjs</code> uruchamia <code>next start -p 3002</code> pod PM2 na VPS, obok innych usług (np. n8n). W tym trybie każde żądanie strony liczy arbitraż na żywo, scraper działa automatycznie w tle (instrumentation hook), a API <code>/api/sync</code> jest dostępne.</li>
+  <li><strong>Statyczny eksport (frozen snapshot)</strong> — <code>scripts/build-static.mjs</code> + <code>STATIC_EXPORT=1</code> w <code>next.config.ts</code> generują folder <code>out/</code> (widoczny w repo, plus spakowany <code>out.zip</code>), który można wgrać przez FTP na zwykły hosting (Hostido — shared hosting bez Node.js). Ten build tymczasowo usuwa <code>force-dynamic</code> ze stron, generuje statyczne parametry dla <code>/events/[id]</code> i chowa cały katalog <code>src/app/api</code> (route handlery nie da się wyeksportować statycznie), po czym przywraca oryginalne pliki źródłowe niezależnie od tego, czy build się powiódł. Wersja statyczna jest zamrożonym zdjęciem danych z chwili builda — nie odświeża się sama.</li>
+  <li><strong>Osobny proces workera alertów</strong> — <code>ecosystem.alerts.config.cjs</code> uruchamia <code>scripts/alerts-worker.ts</code> (przez <code>tsx</code>) jako niezależny proces PM2 na VPS. To jedyny proces, który musi działać 24/7, żeby alerty e-mail funkcjonowały, niezależnie od tego, czy frontend jest hostowany statycznie czy jako pełny serwer SSR.</li>
+</ul>
+<div class="note">To pokazuje realny kompromis wdrożeniowy: docelowy/tańszy hosting frontowy (Hostido, statyczny FTP) nie obsługuje Node.js, więc logika serwerowa (scraper, alerty, API) musi żyć osobno na VPS. Frontend i logika danych są więc rozłączone na produkcji — inaczej niż sugeruje czysty model "SSR z README".</div>
+
+<p class="question">Co robi <code>scripts/alerts-worker.ts</code>?</p>
+<p>To standalone proces Node (uruchamiany przez <code>tsx</code>, bez Next.js), który w pętli wywołuje <code>checkAndSendMatchAlerts()</code> i <code>checkAndSendEventAlerts()</code> z <code>src/lib/match-alerts.ts</code> — te same funkcje, które w trybie pełnego serwera SSR wywołuje wewnętrzny harmonogram <code>startMatchAlertScheduler()</code> z <code>instrumentation-node.ts</code> (co 60 sekund). Worker istnieje, żeby alerty działały także wtedy, gdy frontend jest eksportowany statycznie i nie ma żadnego działającego procesu Next.js.</p>
+
+<p class="question">Jak działa harmonogram automatycznego scrapingu (instrumentation hook)?</p>
+<p><code>src/instrumentation-node.ts</code>, ładowany przez Next.js <code>instrumentation.ts</code> tylko w runtime Node, wystawia <code>startAutoScrape()</code>: pierwsze uruchomienie następuje 15 sekund po starcie serwera, ale tylko jeśli plik <code>scraped-data.json</code> jest starszy niż interwał (domyślnie 480 minut, minimum wymuszone na 30 minut) — żeby deploy zaraz po ręcznym scrapingu nie wywoływał go ponownie. Globalne flagi (<code>globalThis.__bukAutoScrape</code>, <code>__bukScraping</code>) gwarantują, że tylko jeden harmonogram działa na proces i że scraper nigdy nie odpala się dwa razy naraz (współdzielone z endpointem <code>/api/sync</code>).</p>
+</div>
+
+<div class="section">
+<h1>5. Scraper kursów — pełny opis techniczny</h1>
+
+<p class="question">Jak technicznie działa scraper?</p>
+<p><code>src/lib/scraper.ts</code> uruchamia Chromium w trybie headless przez Playwright (<code>chromium.launch({ headless: true, args: ['--disable-blink-features=AutomationControlled'] })</code>) i dla każdego bukmachera otwiera osobny kontekst przeglądarki z polskim locale (<code>pl-PL</code>) i strefą czasową <code>Europe/Warsaw</code>, własnym user-agentem desktopowym i wstrzykniętym skryptem maskującym <code>navigator.webdriver</code> (żeby strona nie wykryła automatyzacji). Żądania obrazów, mediów i fontów są blokowane (<code>context.route</code>) — potrzebny jest tylko DOM. Strona jest otwierana z <code>waitUntil: 'domcontentloaded'</code>, timeout 35 sekund, po czym scraper czeka 4 sekundy, próbuje kliknąć jeden z dziewięciu możliwych przycisków akceptacji cookies, a następnie wykonuje auto-scroll (5× przewinięcie o 1200px z pauzą 600ms), żeby załadować rekordy doładowywane leniwie (lazy-loaded).</p>
+
+<p class="question">Ile stron jest scrapowanych w jednym przebiegu i jak rozłożone jest obciążenie?</p>
+<p>Scraper definiuje 16 zadań (<code>tasks</code>): 5 dedykowanych ekstraktorów dla piłki nożnej (Superbet, STS, Fortuna, Totalbet, Etoto), 5 generycznych dla piłki nożnej (Fuksiarz, Betclic, forBET, LvBet, Betfan) i kolejne 6 dla koszykówki (Superbet, STS, Fortuna, Etoto, Fuksiarz, Betclic) — łącznie 16 wizyt na stronach. Funkcja <code>runPool(tasks, 6)</code> ogranicza liczbę równolegle otwartych stron przeglądarki do 6, żeby nie przeciążyć maszyny hostującej ani nie wzbudzić podejrzeń u bukmacherów przez nagły skok ruchu z jednego adresu IP.</p>
+
+<p class="question">Jakie konkretne strategie ekstrakcji DOM są używane dla każdego bukmachera?</p>
+<table>
+<tr><th>Bukmacher</th><th>Strategia</th><th>Szczegóły</th></tr>
+<tr><td>STS</td><td><code>extractSts</code></td><td>Dedykowane selektory <code>.one-ticket-match-tile</code>, osobne elementy na nazwę gospodarzy/gości (wersja mobilna i desktopowa), kursy z przycisków oznaczonych „1”/„X”/„2”.</td></tr>
+<tr><td>Superbet</td><td><code>extractSuperbet</code></td><td><code>.event-card</code>, nazwy zespołów z dedykowanych elementów <code>.event-team-name</code>, kursy odczytywane parami etykieta-wartość („1”, „X”, „2” + liczba).</td></tr>
+<tr><td>Fortuna, Totalbet</td><td><code>extractWynikMeczu</code></td><td>Szuka w karcie wydarzenia sekcji „Wynik meczu” (piłka) lub frazy zawierającej „zwycięzca” (koszykówka, tryb dwudrogowy z dogrywką) i czyta linie tekstu w ustalonej kolejności względem nagłówka rynku.</td></tr>
+<tr><td>Etoto</td><td><code>extractEtoto</code></td><td>Selektor <code>li.single-event</code>; nazwy zespołów to pierwsze dwie „sensowne” linie przed godziną meczu, kursy to liczby po godzinie.</td></tr>
+<tr><td>Fuksiarz, Betclic, forBET, LvBet, Betfan</td><td><code>extractGenericRows</code></td><td>Generyczny ekstraktor próbujący listy typowych selektorów wierszy meczu (<code>[class*="event-row"]</code>, <code>[class*="match-row"]</code> itd.), rozpoznaje nazwy zespołów po wzorcu „A - B” / „A – B” / „A vs B” albo po dwóch najbliższych liniach przed pierwszym kursem, odróżnia kursy od dat o podobnym formacie liczbowym (np. „11.06” vs „11.06” jako kurs) sprawdzając, czy linia zaraz po niej wygląda jak godzina.</td></tr>
+</table>
+
+<p class="question">Jak scraper rozpoznaje, że dwa wiersze u różnych bukmacherów to ten sam mecz?</p>
+<p>Funkcja <code>matchTeams</code> normalizuje nazwy zespołów (<code>normalizeName</code>): małe litery, usunięcie polskich znaków diakrytycznych i akcentów (NFD + usunięcie znaków combining), usunięcie typowych skrótów klubowych („FC”, „CF”, „AC”, „FK”, „KS”, „GKS” itd.) i spójników. Dodatkowo działa słownik <code>NAME_ALIASES</code> dla całych nazw (np. „usa” → „stany zjednoczone”, różne formy „DR Kongo”/„DR Konga”) oraz <code>TOKEN_ALIASES</code> dla skrótowych form słów („pld” → „południowa”). Po normalizacji nazwy są dzielone na tokeny (słowa o długości &gt;2), a dwie nazwy uznaje się za ten sam zespół, gdy co najmniej 65% tokenów jednej zawiera się (lub jest zawarte) w tokenach drugiej.</p>
+
+<p class="question">Jak działa scalanie (klastrowanie) wydarzeń z wielu bukmacherów w jedno?</p>
+<p>Funkcja <code>mergeResults</code> przechodzi po wszystkich wynikach scrapowania i dla każdego wiersza próbuje znaleźć istniejący „klaster” (potencjalnie ten sam mecz) o tym samym sporcie, gdzie nazwy zespołów się zgadzają (wprost lub odwrotnie — gdy bukmacher zapisał gospodarza i gościa w innej kolejności, kursy są odpowiednio zamieniane). Mecze o tych samych nazwach, ale których odczytany czas startu różni się o więcej niż 6 godzin (<code>MAX_KICKOFF_DIFF_MS</code>), są traktowane jako różne wydarzenia (np. mecz młodzieżowy i seniorski o tej samej nazwie). Druga, finalna przebiegowa faza scalania (<code>coalesced</code>) łączy z powrotem klastry, które rozjechały się tylko z powodu niedokładnego parsowania daty/godziny u jednego z bukmacherów (np. „dziś”/„jutro” bez roku), a nie dlatego, że to faktycznie inny mecz.</p>
+
+<p class="question">Jak liczony jest czas rozpoczęcia meczu z tekstu typu „jutro 21:00”?</p>
+<p><code>parseCommenceTime</code> rozpoznaje słowa „jutro” (dodaje 1 dzień), „dziś”/„dzisiaj” (zostaje przy dzisiejszej dacie) lub wzorzec daty <code>dd.mm[.rrrr]</code>, a następnie nakłada na to godzinę z wzorca <code>hh:mm</code>. Wynik jest zwracany jako pełny ISO timestamp.</p>
+
+<p class="question">Jak generowane jest stabilne ID wydarzenia?</p>
+<p>ID ma format <code>scraped-{sport}-{slug(gospodarz)}-vs-{slug(gość)}</code>, gdzie <code>slug</code> to znormalizowana nazwa zespołu z myślnikami zamiast spacji, ograniczona do 40 znaków. Gdy dwa różne wydarzenia wygenerowałyby identyczne ID (np. ten sam mecz drugiej ligi powtórzony w innym terminie), dodawany jest numeryczny suffiks (<code>-2</code>, <code>-3</code>...). Dzięki temu ID nie zależy od żadnego ulotnego identyfikatora API i pozostaje takie samo między kolejnymi przebiegami scrapera, o ile nazwy zespołów się nie zmieniają — linki w aplikacji i wpisy w dzienniku nie wygasają po odświeżeniu danych.</p>
+
+<p class="question">Jakie filtry wiarygodności stosuje scraper, zanim dane trafią do silnika arbitrażu?</p>
+<ul>
+  <li><code>isValidEvent</code> odrzuca wiersze bez nazwy gospodarza/gościa, z identyczną nazwą obu stron, z nazwą dopasowaną do wzorca śmieciowego (<code>GARBAGE_TEAM_NAME</code> — „Bet Builder”, „boost”, „bonus”, „promocja”, „zakład”, „kupon” — czyli promocyjne wiersze, które czasem trafiają się na liście meczów), z kursem poza zakresem 1.01–66, albo z sumą implikowanych prawdopodobieństw poza realnym zakresem marży bukmachera (0.92–1.45 dla rynków dwudrogowych, 0.95–1.6 dla 1X2).</li>
+  <li>Funkcja <code>getBookmakerMargins</code> dodatkowo odrzuca obliczone marże poza zakresem [-2%, 25%] jako artefakty parsowania.</li>
+  <li>Silnik arbitrażu (<code>MAX_PLAUSIBLE_PROFIT_PERCENT = 20</code>) odrzuca każdą "okazję" z obliczonym zyskiem powyżej 20% jako niemożliwą w praktyce.</li>
+  <li><code>data-service.ts</code> wymaga co najmniej 2 różnych bukmacherów na wydarzenie (<code>MIN_BOOKMAKERS_PER_EVENT</code>) — wydarzenie pokryte przez tylko jednego bukmachera nie nadaje się do porównania ani arbitrażu, więc jest odfiltrowywane jako szum.</li>
+</ul>
+
+<p class="question">Czy scraper łapie też linki do konkretnego zakładu u bukmachera?</p>
+<p>Tak, ale ostrożnie: <code>eventUrl</code> jest ustawiany tylko wtedy, gdy sparsowany element wiersza jest sam fizycznym znacznikiem <code>&lt;a href="..."&gt;</code> na stronie — scraper nigdy nie "zgaduje", który zagnieżdżony link w wierszu jest właściwy, bo błędne zgadnięcie wysłałoby użytkownika na złą stronę. Gdy takiego linku nie da się jednoznacznie ustalić, interfejs używa zamiast tego strony głównej bukmachera.</p>
+</div>
+
+<div class="section">
+<h1>6. Silnik arbitrażu — algorytmy i podatek</h1>
+
+<p class="question">Jak dokładnie liczony jest podatek 12% od zakładów wzajemnych?</p>
+<p>To podatek od obrotu (od stawki), nie od wygranej — <code>netOddsAfterTax(odds, taxRate) = odds × (1 - taxRate/100)</code>. Przykład z kodu: stawka 100 zł przy kursie 1.10 brutto — do gry faktycznie wchodzi 88 zł netto, co przy tym samym kursie zwraca 88 × 1.10 = 96.80 zł, czyli stratę, mimo że kurs brutto jest powyżej 1. Funkcja odwrotna <code>grossOddsForNet</code> przelicza docelowy kurs netto z powrotem na to, co trzeba zobaczyć u bukmachera brutto.</p>
+
+<p class="question">Dlaczego Betclic jest pomijany w przeliczeniu podatkowym?</p>
+<p>Betclic oferuje tryb gry bez podatku (pokrywa go sam) — lista <code>TAX_FREE_BOOKMAKER_KEYS</code> w <code>store-types.ts</code> zawiera obecnie tylko <code>'betclic'</code>, ale jest rozszerzalna, jeśli inni bukmacherzy wprowadzą analogiczne promocje. Funkcja <code>isTaxFreeBookmaker</code> normalizuje klucz bukmachera (małe litery, bez spacji) przed porównaniem z tą listą.</p>
+
+<p class="question">Czy użytkownik może zmienić stawkę podatkową?</p>
+<p>Tak — <code>UserSettings.taxRate</code> (domyślnie 12%) jest edytowalne w panelu konta i przekazywane jako parametr do wszystkich funkcji silnika arbitrażu (<code>findArbitrageForEvent</code>, <code>findAllNearArbitrages</code> itd.), które domyślnie korzystają z <code>DEFAULT_TAX_RATE</code> tylko jeśli nie podano innej wartości.</p>
+
+<p class="question">Jakie inne ustawienia użytkownika wpływają na wykrywanie okazji?</p>
+<ul>
+  <li><code>minProfitForAlert</code> — minimalny % zysku, który wywołuje powiadomienie o surebecie (domyślnie 0.5%).</li>
+  <li><code>preSurebetThreshold</code> — margines ponad 100% uznawany za "blisko progu" (domyślnie 2, czyli do 102% sumy implikowanych prawdopodobieństw).</li>
+  <li><code>roundingEnabled</code> / <code>roundingStep</code> — zaokrąglanie proponowanych stawek do najbliższej wielokrotności (np. 10 zł) przez funkcję <code>roundStake</code>.</li>
+  <li><code>excludeNicheMarkets</code> / <code>mainMarketsOnly</code> — filtrowanie rynków niszowych (na razie aplikacja obsługuje tylko h2h, więc te flagi są przygotowane na przyszłość, gdy przybędą inne typy rynków).</li>
+  <li><code>selectedBookmakers</code> — lista bukmacherów, u których użytkownik faktycznie ma konto; domyślnie 9 z 10 scrapowanych (poza brakującym w domyślnej liście jednym kluczem).</li>
+</ul>
+</div>
+
+<div class="section">
+<h1>7. System powiadomień i alertów</h1>
+
+<p class="question">Jakie typy alertów obsługuje aplikacja?</p>
+<ul>
+  <li><strong>Alerty "mecz się zaczyna"</strong> (<code>checkAndSendMatchAlerts</code>) — globalne ustawienie na koncie użytkownika (<code>notify_settings</code>: włączone/wyłączone, liczba minut przed startem, e-mail); worker co minutę sprawdza wszystkie nadchodzące wydarzenia i wysyła e-mail z najlepszymi kursami (h2h) dla tych w oknie czasowym ±1 minuta od żądanego wyprzedzenia.</li>
+  <li><strong>Alerty per-wydarzenie</strong> (<code>checkAndSendEventAlerts</code>, tabela <code>event_alerts</code>) — użytkownik może utworzyć subskrypcję powiązaną z konkretnym meczem, trzech typów: <code>before-kickoff</code> (X minut przed startem), <code>at-time</code> (o konkretnej godzinie zegarowej) lub <code>odds-threshold</code> (gdy kurs wybranego wyniku u jakiegokolwiek bukmachera przekroczy zadaną wartość). Po wysłaniu alertu wpis jest usuwany z bazy (jednorazowe wyzwolenie).</li>
+  <li><strong>Powiadomienia w aplikacji</strong> (<code>/notifications</code>) — wewnętrzna historia zdarzeń: nowy surebet, surebet bliski progu, wygasła okazja, zakończony zakład; w obecnej wersji to dane demonstracyjne (<code>DEMO_NOTIFICATIONS</code>) — nie ma jeszcze realnego sprzężenia z silnikiem arbitrażu generującego te wpisy automatycznie.</li>
+</ul>
+
+<p class="question">Jak technicznie wysyłany jest e-mail?</p>
+<p>Aplikacja sama nie wysyła e-maili — buduje payload (<code>MatchAlertPayload</code>: dane wydarzenia, czas do startu, najlepsze kursy per wynik z linkiem do bukmachera) i wysyła go jako POST na <code>N8N_WEBHOOK_URL</code> (zewnętrzny workflow n8n, skonfigurowany osobno, odpowiedzialny za faktyczne wysłanie e-maila). Jeśli zmienna środowiskowa nie jest ustawiona, funkcja <code>sendToN8n</code> zwraca błąd bez próby wysyłki.</p>
+
+<p class="question">Jak unikane jest wielokrotne wysłanie tego samego alertu?</p>
+<p>Dla alertów "mecz się zaczyna" lokalny plik <code>src/lib/notified-events.json</code> przechowuje ostatnie 500 ID wydarzeń, dla których alert już wysłano (<code>readNotifiedIds</code> / <code>markNotified</code>) — raz oznaczone wydarzenie nie wywoła drugiego powiadomienia, nawet dla innego użytkownika w tej samej rundzie sprawdzania. Dla alertów per-wydarzenie ochronę przed duplikatem zapewnia samo usunięcie wiersza z tabeli <code>event_alerts</code> po wysłaniu.</p>
+
+<p class="question">Skąd worker bierze dane o kursach, jeśli działa niezależnie od serwera Next.js?</p>
+<p>Czyta bezpośrednio plik <code>src/lib/scraped-data.json</code> z dysku (<code>readScrapedEvents</code>) — ten sam plik, do którego zapisuje harmonogram scrapingu. Worker i serwer SSR muszą więc współdzielić ten sam katalog na VPS, żeby dane były aktualne dla obu procesów.</p>
+</div>
+
+<div class="section">
+<h1>8. Warstwa danych (Supabase) i bezpieczeństwo</h1>
+
+<p class="question">Do czego konkretnie służy Supabase?</p>
+<ul>
+  <li>Autentykacja użytkowników: e-mail/hasło oraz Google OAuth (<code>GoogleAuthButton.tsx</code>, <code>/auth/callback</code>).</li>
+  <li>Tabela <code>journal_entries</code> — dziennik zakładów użytkownika.</li>
+  <li>Tabela <code>notify_settings</code> — globalne ustawienia powiadomień e-mail per użytkownik (włączone, liczba minut przed startem, adres e-mail).</li>
+  <li>Tabela <code>event_alerts</code> — subskrypcje alertów powiązane z konkretnym wydarzeniem.</li>
+</ul>
+<p>Sam silnik arbitrażu i scraper nie potrzebują bazy danych do działania — operują na pliku JSON.</p>
+
+<p class="question">Jak rozróżniane są klienci Supabase w kodzie?</p>
+<p>Trzy warianty w <code>src/lib/supabase/</code>: <code>client.ts</code> (po stronie przeglądarki, używa publicznego anon key), <code>server.ts</code> (po stronie serwera w komponentach Next.js, operuje na cookies sesji), <code>admin.ts</code> (<code>createAdminClient</code>, klucz <code>service_role</code> — używany wyłącznie przez worker alertów i logikę serwerową, która musi czytać/pisać dane bez kontekstu zalogowanego użytkownika, np. wszystkie ustawienia powiadomień naraz).</p>
+
+<p class="question">Jak zabezpieczony jest dostęp do danych w bazie?</p>
+<p>Row Level Security jest włączone na tabeli <code>journal_entries</code> z polityką ograniczającą widoczność wierszy do <code>auth.uid() = user_id</code> — każdy użytkownik widzi tylko swój własny dziennik. Analogiczny mechanizm chroni <code>notify_settings</code> i <code>event_alerts</code> (dostęp przez klucz <code>user_id</code>), z wyjątkiem operacji administracyjnych workera, który łączy się kluczem <code>service_role</code> (obchodzi RLS z założenia, bo działa poza kontekstem pojedynczego użytkownika).</p>
+
+<p class="question">Jaki jest pełny schemat tabeli <code>journal_entries</code>?</p>
+<pre>create table journal_entries (
+  id              uuid primary key default gen_random_uuid(),
+  created_at      timestamptz not null default now(),
+  user_id         uuid not null references auth.users(id) on delete cascade,
+  event_name      text not null,
+  sport_title     text not null,
+  commence_time   timestamptz not null,
+  market_key      text not null,
+  bets            jsonb not null,        -- tablica JournalBet[]
+  total_stake     numeric not null,
+  guaranteed_return numeric not null,
+  profit          numeric not null,
+  profit_percent  numeric not null,
+  status          text not null default 'pending',  -- pending|won|lost|cancelled
+  notes           text not null default '',
+  arbitrage_id    text,
+  is_demo         boolean not null default false
+);</pre>
+</div>
+
+<div class="section">
+<h1>9. API aplikacji</h1>
+
+<p class="question"><code>POST /api/sync</code></p>
+<p>Uruchamia scraper i nadpisuje <code>scraped-data.json</code>. Chronione cooldownem (domyślnie 2 minuty <code>SCRAPE_COOLDOWN_MIN</code>) — jeśli dane są świeże, zwraca je bez ponownego scrapowania. Zwraca HTTP 429, jeśli scraping jest już w toku (globalna flaga współdzielona z harmonogramem automatycznym, żeby nie odpalić dwóch przebiegów Playwright naraz).</p>
+<pre>// sukces
+{ "success": true, "count": 87, "timestamp": 1718800000000 }
+
+// cooldown aktywny
+{ "success": true, "skipped": true, "count": 87, "timestamp": 1718799000000,
+  "message": "Kursy są aktualne (odświeżono 1 minutę temu)." }</pre>
+
+<p class="question"><code>GET /api/sync</code></p>
+<p>Zwraca status synchronizacji bez uruchamiania scrapera:</p>
+<pre>{ "isSyncing": false, "lastSyncTime": 1718800000000, "lastSyncCount": 87, "hasData": true }</pre>
+
+<p class="question"><code>GET /api/events/list</code></p>
+<p>Zwraca listę wszystkich wydarzeń jako JSON (bez przeliczania arbitrażu) — używane przez komponenty frontendowe do filtrowania i sortowania po stronie klienta bez ponownego żądania do serwera przy każdej zmianie filtra.</p>
+
+<p class="note">Żaden z tych endpointów nie jest dostępny w wersji statycznej (eksport FTP) — <code>build-static.mjs</code> chowa cały katalog <code>src/app/api</code> na czas builda, bo route handlery nie mogą zostać wyeksportowane jako statyczne pliki.</p>
+</div>
+
+<div class="section">
+<h1>10. Zmienne środowiskowe</h1>
+<table>
+<tr><th>Zmienna</th><th>Przeznaczenie</th></tr>
+<tr><td><code>NEXT_PUBLIC_SUPABASE_URL</code></td><td>URL projektu Supabase — wymagane do logowania i dziennika.</td></tr>
+<tr><td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td><td>Publiczny klucz Supabase (przeglądarka).</td></tr>
+<tr><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>Klucz administracyjny — używany przez worker alertów i logikę serwerową.</td></tr>
+<tr><td><code>ODDS_API_KEY</code></td><td>Opcjonalny klucz do The Odds API — gdy brak, aplikacja korzysta ze scrapera/danych demo.</td></tr>
+<tr><td><code>SCRAPE_INTERVAL_MIN</code></td><td>Co ile minut harmonogram automatyczny odpala scraper (domyślnie 480 = 8h, minimum wymuszone na 30).</td></tr>
+<tr><td><code>SCRAPE_COOLDOWN_MIN</code></td><td>Minimalny czas między ręcznymi wywołaniami <code>POST /api/sync</code> (domyślnie 2 minuty).</td></tr>
+<tr><td><code>N8N_WEBHOOK_URL</code></td><td>Adres webhooka n8n, na który wysyłane są payloady alertów e-mail.</td></tr>
+<tr><td><code>N8N_AUTH_HEADER</code></td><td>Opcjonalny nagłówek autoryzacyjny dla webhooka n8n.</td></tr>
+<tr><td><code>STATIC_EXPORT</code> / <code>NEXT_PUBLIC_STATIC_EXPORT</code></td><td>Ustawiane wyłącznie przez <code>build-static.mjs</code> — przełącza Next.js w tryb <code>output: "export"</code>.</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h1>11. Stos technologiczny — pełna lista</h1>
+<table>
+<tr><th>Warstwa</th><th>Technologia</th></tr>
+<tr><td>Framework</td><td>Next.js 15/16 (App Router), SSR + opcjonalny statyczny eksport</td></tr>
+<tr><td>Język</td><td>TypeScript</td></tr>
+<tr><td>Stylowanie</td><td>Tailwind CSS</td></tr>
+<tr><td>Autentykacja + baza</td><td>Supabase (PostgreSQL, Auth, Row Level Security)</td></tr>
+<tr><td>Scraper</td><td>Playwright (Chromium headless)</td></tr>
+<tr><td>Automatyzacja powiadomień</td><td>n8n (webhook, wysyłka e-mail)</td></tr>
+<tr><td>Zarządzanie procesami (VPS)</td><td>PM2 — serwer SSR (port 3002) oraz osobny worker alertów</td></tr>
+<tr><td>Hosting frontu</td><td>Hostido (shared hosting, statyczny eksport przez FTP) lub VPS (pełny SSR)</td></tr>
+<tr><td>Skrypty narzędziowe</td><td><code>scripts/build-static.mjs</code>, <code>scripts/scrape-and-save.ts</code>, <code>scripts/test-scraper.ts</code>, <code>scripts/alerts-worker.ts</code></td></tr>
+</table>
+<p>Kluczowe pliki logiki: <code>src/lib/arbitrage.ts</code> (matematyka arbitrażu), <code>src/lib/scraper.ts</code> (zbieranie kursów, ~1070 linii), <code>src/lib/data-service.ts</code> (łączenie scrapera/API z arbitrażem, filtrowanie, marże), <code>src/lib/journal-service.ts</code> i <code>alerts-service.ts</code> (CRUD na Supabase), <code>src/lib/match-alerts.ts</code> i <code>notify-store.ts</code> (alerty i integracja n8n), <code>src/instrumentation-node.ts</code> (harmonogramy w tle).</p>
+</div>
+
+<div class="section">
+<h1>12. Co udało się zrobić (zakres działający)</h1>
+
+<p class="question">Jakie funkcje są w pełni gotowe i działające?</p>
+<ul>
+  <li><strong>Scraper kursów</strong> dla 10 polskich bukmacherów (STS, Superbet, Fortuna, Betclic, Etoto, Fuksiarz, forBET, LvBet, Betfan, Totalbet), z dedykowanymi i generycznymi strategiami ekstrakcji, anty-detekcją (maskowanie <code>navigator.webdriver</code>, blokowanie zasobów medialnych, losowy realistyczny user-agent), poolingiem zadań ograniczającym równoległość do 6 stron.</li>
+  <li><strong>Scalanie wydarzeń między bukmacherami</strong> — normalizacja nazw, aliasy, dopasowanie tokenowe ≥65%, dwuetapowe klastrowanie (z rozróżnianiem meczów oddalonych czasowo o &gt;6h i ponownym scalaniem rozjazdów wynikających z błędów parsowania daty).</li>
+  <li><strong>Stabilne ID wydarzeń</strong>, niezmienne między kolejnymi przebiegami scrapera.</li>
+  <li><strong>Pełny silnik arbitrażu</strong>: wykrywanie surebetów, rozkład stawek proporcjonalny, podatek 12% (z wyjątkiem Betclic), filtr 20% maks. zysku, watchlista near-arbitrage z wyliczonym kursem docelowym, kalkulator marż bukmacherów, funkcja hedgingu.</li>
+  <li><strong>10 stron frontendowych</strong>: Dashboard, Arbitraż, Wydarzenia (lista + szczegóły), Kalkulator, Marże, Konto (6 zakładek), Powiadomienia, Grupy MŚ 2026, Strategie (Value Bet + Kelly Criterion), Roadmapa.</li>
+  <li><strong>Autentykacja</strong> (e-mail/hasło + Google OAuth) i dziennik zakładów z RLS w Supabase.</li>
+  <li><strong>System alertów e-mail</strong> trójtorowy: globalne powiadomienie przed startem meczu, per-wydarzenie (3 typy wyzwalaczy), integracja z n8n, deduplikacja wysyłki.</li>
+  <li><strong>Tryb demo</strong> w pełni nawigowalny bez konfiguracji (brak scraped-data.json i brak ODDS_API_KEY → statyczne dane realistyczne).</li>
+  <li><strong>Dwa tryby wdrożenia</strong> — pełny serwer SSR pod PM2 oraz statyczny eksport do hostingu FTP, ze skryptem automatycznie przełączającym konfigurację i przywracającym stan źródłowy.</li>
+  <li><strong>Automatyczny harmonogram scrapingu</strong> (instrumentation hook) i endpoint ręcznej synchronizacji z cooldownem i ochroną przed równoległym uruchomieniem.</li>
+</ul>
+
+<p class="question">Czego się nauczyliśmy / co zadziałało lepiej niż zakładano?</p>
+<ul>
+  <li>Generyczny ekstraktor (<code>extractGenericRows</code>) sprawdził się dla większości serwisów opartych na podobnych wzorcach DOM (Fuksiarz, Betclic, forBET, LvBet, Betfan) — nie trzeba pisać osobnego parsera dla każdego z nich.</li>
+  <li>Dopasowanie tokenowe nazw drużyn (≥65%) okazało się odporne na różnice w zapisie nazw klubów, bez budowania pełnego słownika aliasów dla każdej drużyny.</li>
+  <li>Rozdzielenie hostingu statycznego (tani FTP) od logiki serwerowej (VPS) pozwoliło uniknąć kosztownego hostingu Node.js dla samego frontu, przy zachowaniu pełnej funkcjonalności alertów i scrapingu na osobnym, mniejszym procesie.</li>
+</ul>
+</div>
+
+<div class="section">
+<h1>13. Co nie udało się zrobić / czego zabrakło</h1>
+
+<p class="question">Jakie funkcje z roadmapy zostały odłożone lub nie weszły?</p>
+<p>Zgodnie z <code>src/app/roadmap/page.tsx</code>, w pełni zrealizowana jest tylko <strong>Faza 1 (MVP)</strong>. Pozostałe fazy:</p>
+<ul>
+  <li><strong>Faza 2 — dane na żywo:</strong> WebSocket/SSE, auto-refresh co 30s, powiadomienia push, zaawansowane filtrowanie/sortowanie, dodatkowe rynki (over/under, handicap) — <strong>niezrealizowane</strong>.</li>
+  <li><strong>Faza 3 — szersze scrapowanie:</strong> Betfair Exchange, bukmacherzy zagraniczni (Pinnacle, Bet365, Unibet, Betway), rotacja proxy, cache Redis/Upstash, rate limiting — <strong>niezrealizowane</strong>. Bukmacherzy zagraniczni są przygotowani w strukturze (<code>ALL_BOOKMAKERS</code>), ale nie są scrapowani — silniejsze mechanizmy antybotowe i/lub wymóg logowania.</li>
+  <li><strong>Faza 4 — analiza zaawansowana:</strong> historia kursów i trendy, predykcja ML, rozliczenia wielowalutowe — <strong>niezrealizowane</strong>. Wyjątkiem jest kalkulator Kelly Criterion / Value Bet — to jedyny element tej fazy, który już działa (strona <code>/strategies</code>), zrealizowany przed pozostałymi punktami fazy.</li>
+  <li><strong>Faza 5 — monetyzacja:</strong> plan premium, bot Telegram/Discord, publiczne API — <strong>częściowo</strong> (konta i dziennik istnieją, flaga <code>isPremium</code> w ustawieniach jest przygotowana, ale brak realnego systemu płatności, bota czy publicznego API).</li>
+  <li><strong>Faza 6 — produkcja i skalowalność:</strong> CDN, monitoring (Sentry/LogRocket), pełne testy automatyczne, CI/CD — <strong>niezrealizowane</strong>. Redis/cache pośredni także nie wdrożony — choć dwutorowy model wdrożenia (SSR + worker PM2) jest krokiem w stronę skalowalności poza pierwotny plan jednego serwera.</li>
+</ul>
+
+<p class="question">Czy próbowano scrapować bukmacherów zagranicznych?</p>
+<p>Tak, są przygotowani w strukturze danych (<code>ALL_BOOKMAKERS</code> zawiera Pinnacle, Bet365, Unibet, Betway, William Hill, Marathon Bet, bwin, Betsson, 1xBet, DraftKings, FanDuel, BetMGM, PZBuk), ale scraping się nie powiódł na tyle skutecznie, by włączyć je do produkcji — ich strony stosują silniejsze mechanizmy antybotowe i/lub wymagają zalogowania, co wykracza poza zakres prostego scrapera DOM bez rotacji proxy i bez systemu zarządzania sesją.</p>
+
+<p class="question">Czy jest cache albo kolejka zadań?</p>
+<p>Nie ma Redis, kolejki zadań ani warstwy cache pośredniego — każde żądanie strony z kursami w trybie SSR odczytuje plik <code>scraped-data.json</code> i liczy arbitraże na żywo. To prostsze w utrzymaniu, ale ogranicza skalowalność przy większym ruchu (każde żądanie powtarza tę samą pracę obliczeniową).</p>
+
+<p class="question">Co jest jeszcze niedokończone w samym systemie powiadomień?</p>
+<p>Lista w <code>/notifications</code> obecnie korzysta z danych demonstracyjnych (<code>DEMO_NOTIFICATIONS</code>) — backend alertów e-mail (worker, n8n) działa naprawdę, ale wewnętrzna historia powiadomień w aplikacji nie jest jeszcze w pełni podłączona do realnych zdarzeń silnika arbitrażu (np. automatyczny wpis "nowy surebet" przy każdym przebiegu scrapera).</p>
+</div>
+
+<div class="section">
+<h1>14. Główne ograniczenia projektu</h1>
+
+<p class="question">Jakie jest największe ograniczenie techniczne?</p>
+<p><strong>Prędkość odświeżania kursów.</strong> Scraper oparty na Playwright + Chromium headless musi fizycznie otworzyć każdą z 16 stron bukmacherskich, poczekać na załadowanie (do 35s timeout + 4s + auto-scroll ~3.4s), zaakceptować cookies i sparsować DOM, nawet z ograniczeniem do 6 równoległych kontekstów. Pełny przebieg trwa około <strong>2–3 minuty</strong>. To oznacza, że:</p>
+<ul>
+  <li>nie da się odświeżać kursów w czasie rzeczywistym (sekundy) — domyślny interwał automatyczny to 8 godzin (<code>SCRAPE_INTERVAL_MIN=480</code>), a ręczne odświeżenie ma cooldown 2 minuty właśnie po to, by nie przeciążać stron bukmacherów ciągłym scrapowaniem i nie narazić się na zablokowanie adresu IP;</li>
+  <li>między dwoma odświeżeniami kursy u bukmacherów mogą się zmienić wielokrotnie — okno wykrycia surebetu może się zamknąć, zanim użytkownik zdąży zareagować.</li>
+</ul>
+
+<p class="question">Czy surebety wykrywane przez aplikację są zawsze aktualne?</p>
+<p>Nie zawsze. Dane są tak świeże, jak ostatni scraping (do 8h, lub mniej jeśli użytkownik ręcznie odświeżył z zachowaniem cooldownu). W zakładach sportowych okazje arbitrażowe bywają krótkotrwałe (minuty), więc realna szansa na „złowienie” surebetu zanim kurs się skoryguje jest ograniczona przez częstotliwość scrapingu, a nie przez samą logikę wykrywania, która jest matematycznie poprawna i działa na danych w momencie ich zebrania.</p>
+
+<p class="question">Czy łatwo jest znaleźć prawdziwe surebety?</p>
+<p>Nie — to drugie kluczowe ograniczenie. Nawet z poprawnie działającym scraperem i dobrą logiką wykrywania, <strong>rzeczywistych surebetów na rynku polskim jest mało i są nietrwałe</strong>. Powody:</p>
+<ul>
+  <li>Bukmacherzy szybko korygują kursy, gdy widzą jednostronny napływ zakładów (to właśnie tworzy i zamyka okazje arbitrażowe).</li>
+  <li>Polscy bukmacherzy często kopiują się nawzajem cenowo (podobne marże, podobne typowania), więc rozjazdy kursów wystarczające do arbitrażu po uwzględnieniu 12% podatku są rzadkie.</li>
+  <li>12% podatek od obrotu znacząco zawęża próg — kurs musi być rozjeżdżony dość mocno, żeby po przeliczeniu na netto nadal wyszedł zysk (kurs musi przekroczyć ok. 1.136, żeby po podatku zwrócić więcej niż wpłacono), co dodatkowo redukuje liczbę realnych okazji.</li>
+  <li>Filtr wiarygodności (odrzucanie okazji &gt;20% zysku) słusznie eliminuje błędy parsowania, ale tym samym eliminuje też dużą część „okazji”, które i tak były fałszywe.</li>
+  <li>Wymóg co najmniej 2 bukmacherów na wydarzenie (<code>MIN_BOOKMAKERS_PER_EVENT</code>) zawęża pole jeszcze bardziej, bo nie każdy mecz jest pokryty przez wszystkich 10 scrapowanych serwisów naraz.</li>
+</ul>
+
+<p class="question">Jak zaadresowano te dwa ograniczenia na poziomie produktu?</p>
+<p>Zdecydowano się <strong>przesunąć nacisk z „czystego łowienia surebetów” na pokazywanie najwyższych dostępnych kursów</strong> u poszczególnych bukmacherów dla danego wydarzenia/rynku:</p>
+<ul>
+  <li>Widok porównawczy w <code>/events</code> pokazuje kursy wszystkich bukmacherów obok siebie dla każdego wydarzenia, z naciskiem na to, który bukmacher daje <strong>najlepszy kurs</strong> na dany wynik — nawet jeśli nie składa się to w pełny surebet (typ <code>OutcomeComparison.bestOdds</code> jest wyliczany dla każdego wyniku niezależnie od arbitrażu).</li>
+  <li>Watchlista (near-arbitrage) jest świadomym kompromisem: skoro pełne surebety są rzadkie i krótkotrwałe, użytkownikowi pokazuje się też okazje „blisko progu” (różnica &lt;3%, mecz w ciągu 72h), żeby miał szansę zareagować, gdy kurs jeszcze trochę się ruszy.</li>
+  <li>Tabela marż (<code>/margins</code>) pozwala użytkownikowi samodzielnie ocenić, który bukmacher ma generalnie najlepsze (najniższe marżowo) kursy w danej dyscyplinie, niezależnie od tego, czy akurat trwa surebet.</li>
+  <li>Strona <code>/strategies</code> z kalkulatorem Value Bet i Kelly Criterion daje alternatywną strategię zarabiania (obstawianie kursów "z wartością" względem własnego oszacowania), niezależną od dostępności surebetów.</li>
+  <li>System alertów e-mail (próg kursowy, wyprzedzenie czasowe) pozwala użytkownikowi reagować na zmiany bez konieczności ciągłego odświeżania strony, częściowo kompensując rzadkość scrapingu.</li>
+  <li>W praktyce aplikacja działa więc jako <strong>narzędzie do znajdowania najlepszych kursów i okazji granicznych</strong>, a nie wyłącznie „maszynka do gwarantowanego zysku” — bardziej realistyczne pozycjonowanie biorąc pod uwagę ograniczenia częstotliwości danych i rzadkość prawdziwych surebetów.</li>
+</ul>
+
+<p class="question">Jakie są inne, mniejsze ograniczenia?</p>
+<ul>
+  <li><strong>Rynki ograniczone do dwu-/trójdrogowych</strong> — piłka nożna (1X2) i koszykówka (zwycięzca z dogrywką). Brak handicapów, over/under, rynków szczegółowych — wymagałoby znacznie bardziej złożonego parsowania DOM dla każdego bukmachera.</li>
+  <li><strong>Brak historii kursów</strong> — przechowywany jest tylko ostatni stan (<code>scraped-data.json</code>), bez bazy historycznej do analizy trendów lub trenowania modeli predykcyjnych.</li>
+  <li><strong>Zależność od struktury DOM bukmacherów</strong> — każda zmiana układu strony może zepsuć ekstraktor i wymaga ręcznej aktualizacji selektorów; typowe ryzyko każdego scrapera bez publicznego API.</li>
+  <li><strong>Brak testów automatycznych</strong> — zwiększa ryzyko regresji przy zmianach w logice arbitrażu lub scraperze.</li>
+  <li><strong>Brak cache/Redis</strong> — przy większym ruchu obliczanie arbitrażu na żywo przy każdym żądaniu może obciążyć serwer.</li>
+  <li><strong>Wersja statyczna jest zamrożonym zdjęciem danych</strong> z momentu builda — jeśli ktoś korzysta z wersji hostowanej na Hostido przez FTP, kursy nie odświeżają się same; trzeba wykonać nowy build i wgrać go ponownie.</li>
+  <li><strong>Historia powiadomień w aplikacji nie jest jeszcze podłączona do realnych zdarzeń</strong> — działa na danych demo, mimo że sam mechanizm wysyłki e-mail jest produkcyjny.</li>
+</ul>
+</div>
+
+<div class="section">
+<h1>15. Decyzje produktowe i ich uzasadnienie</h1>
+
+<p class="question">Dlaczego podatek 12% jest wliczany do kalkulacji, a nie tylko pokazywany informacyjnie?</p>
+<p>Kurs „powyżej 1.0” może mimo to generować stratę po podatku od obrotu. Pokazywanie tylko kursów brutto sugerowałoby fałszywe okazje. Dlatego wszystkie wyliczenia finansowe (stawki, zysk, próg arbitrażu) bazują na kursie netto, a kursy brutto są wyświetlane tylko jako odniesienie do tego, co widać u bukmachera.</p>
+
+<p class="question">Dlaczego Betclic jest wyjątkiem podatkowym?</p>
+<p>Betclic oferuje tryb gry bez podatku (pokrywa go sam), więc jego kursy nie są dyskontowane w obliczeniach. Lista wyjątków jest rozszerzalna, jeśli inni bukmacherzy wprowadzą podobne promocje.</p>
+
+<p class="question">Dlaczego odrzucane są okazje z zyskiem &gt;20%?</p>
+<p>Tak wysoki „zysk” w realnym arbitrażu bukmacherskim praktycznie nie istnieje — oznacza w 99% przypadków błąd scrapowania (pomylone mecze, źle sparsowany kurs, nieaktualna strona). Filtr chroni użytkownika przed postawieniem pieniędzy na podstawie danych będących artefaktem błędu technicznego.</p>
+
+<p class="question">Dlaczego cooldown 2 minuty na ręczne odświeżenie?</p>
+<p>Żeby nie bombardować stron bukmacherów częstymi automatycznymi wizytami, co groziłoby zablokowaniem adresu IP scrapera i utratą dostępu do danych w ogóle. To kompromis między świeżością danych a stabilnością mechanizmu zbierania danych.</p>
+
+<p class="question">Dlaczego wymagane są przynajmniej 2 bukmacherzy na wydarzenie?</p>
+<p>Kursy jednego bukmachera nie da się z niczym porównać — pojedyncze źródło to szum, nie okazja. Filtrowanie takich wydarzeń na poziomie <code>data-service.ts</code> (a nie w samym scraperze) pozwala mu zachować surowe dane dla innych celów (np. tabeli marż per bukmacher), podczas gdy widoki porównawcze i arbitrażowe widzą tylko sensowne, porównywalne wydarzenia.</p>
+
+<p class="question">Dlaczego dane Mistrzostw Świata 2026 są wpisane ręcznie, a nie scrapowane?</p>
+<p>Nie istnieje wiarygodne źródło do automatycznego scrapowania wyników turnieju w obrębie tego samego scrapera (który celuje w kursy bukmacherskie, nie w wyniki sportowe), a "zgadywanie" przypisania grup byłoby tym samym problemem co fałszywy arbitraż: prezentowanie danych z dużą pewnością, które mogą być błędne. Bezpieczniej wpisać je raz ręcznie i utrzymywać aktualność świadomie.</p>
+
+<p class="question">Dlaczego eksport statyczny chowa cały katalog <code>api</code> tylko na czas builda, a nie na trwałe?</p>
+<p>Bo te same pliki źródłowe muszą obsługiwać oba tryby wdrożenia — pełny serwer SSR (gdzie API musi działać) i eksport statyczny (gdzie API nie może istnieć). Tymczasowe chowanie i przywracanie po buildzie (nawet gdy build się nie powiedzie — blok <code>finally</code>) pozwala utrzymać jedną bazę kodu bez rozdzielania jej na dwa oddzielne projekty.</p>
+</div>
+
+<div class="section">
+<h1>16. Plany na przyszłość</h1>
+<p><strong>Krótkoterminowo (Faza 2):</strong> odświeżanie danych w czasie bliższym rzeczywistemu (cel &lt;30s opóźnienia), więcej typów rynków (handicap, over/under), lepsze filtrowanie i sortowanie, powiadomienia push.</p>
+<p><strong>Średnioterminowo (Faza 3–4):</strong> szersze pokrycie bukmacherów (cel: 20+, w tym zagraniczni i Betfair Exchange — wymaga rozwiązania problemu blokad antybotowych, prawdopodobnie przez rotację proxy i/lub zarządzanie sesją logowania), cache pośredni (Redis/Upstash), dane historyczne i analiza trendów, dokończenie value bettingu o pełną integrację z resztą aplikacji.</p>
+<p><strong>Długoterminowo (Faza 5–6):</strong> monetyzacja (realny plan premium z płatnościami, boty powiadomień na Telegram/Discord, publiczne API dla zewnętrznych deweloperów), pełna infrastruktura produkcyjna (testy automatyczne, CI/CD, monitoring typu Sentry/LogRocket, CDN), dopięcie historii powiadomień do realnych zdarzeń silnika arbitrażu.</p>
+<p>Cele biznesowe zapisane w samej aplikacji (<code>/roadmap</code>): 20+ bukmacherów monitorowanych, &lt;30s opóźnienia danych, 15+ sportów — żaden z tych celów nie jest jeszcze zrealizowany w obecnej wersji (10 bukmacherów krajowych, opóźnienie liczone w godzinach, 2 sporty: piłka nożna i koszykówka).</p>
+</div>
+
+<div class="section">
+<h1>17. Podsumowanie</h1>
+<p>BukScan w obecnej formie to w pełni działający MVP rozwiązujący realny, dobrze zdefiniowany problem (porównanie kursów i wykrywanie arbitrażu na polskim rynku bukmacherskim) z poprawną matematyką, solidnym i odpornym na drobne błędy danych scraperem oraz przemyślanym modelem podatkowym. Dwa fundamentalne ograniczenia rynku i technologii — wolne, bezpieczne odświeżanie danych (2–3 minuty na przebieg, cooldowny chroniące przed blokadą IP) oraz naturalna rzadkość i krótkotrwałość prawdziwych surebetów po doliczeniu 12% podatku — sprawiły, że projekt świadomie poszerzył swoją wartość poza "czyste łowienie surebetów": w stronę porównywarki najlepszych kursów, watchlisty okazji granicznych, tabeli marż i narzędzi strategicznych (Value Bet, Kelly Criterion). To pragmatyczne dopasowanie zakresu do realiów rynku, nie porażka pierwotnego celu. Większość zaawansowanych planów (real-time, szersi bukmacherzy, ML, monetyzacja, pełna infrastruktura produkcyjna) pozostaje w fazie planowania i jest jasno opisana w roadmapie aplikacji.</p>
+</div>
+
+<div class="footer-note">BukScan — dokument wewnętrzny projektu, wygenerowany na podstawie pełnej analizy kodu źródłowego</div>
+
+</body>
+</html>
