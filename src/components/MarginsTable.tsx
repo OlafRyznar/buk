@@ -63,7 +63,7 @@ export default function MarginsTable({ stats }: { stats: BookmakerMarginStats[] 
         <p className="text-base font-semibold text-white">Brak danych o marżach</p>
         <p className="mx-auto mt-2 max-w-md text-sm text-white/55">
           Marże liczone są z realnie zeskanowanych kursów. Kliknij{" "}
-          <span className="font-semibold text-sky-300">„Skanuj kursy"</span> w panelu bocznym,
+          <span className="font-semibold text-sky-300">&quot;Skanuj kursy&quot;</span> w panelu bocznym,
           aby pobrać aktualne dane od bukmacherów.
         </p>
       </div>

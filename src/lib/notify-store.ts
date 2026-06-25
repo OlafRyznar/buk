@@ -28,6 +28,28 @@ export function markNotified(id: string) {
   fs.writeFileSync(NOTIFIED_PATH, JSON.stringify(trimmed, null, 2), 'utf-8');
 }
 
+const NOTIFIED_EVENT_ALERTS_PATH = path.join(process.cwd(), 'src', 'lib', 'notified-event-alerts.json');
+
+export function readNotifiedEventAlertIds(): string[] {
+  try {
+    if (fs.existsSync(NOTIFIED_EVENT_ALERTS_PATH)) {
+      return JSON.parse(fs.readFileSync(NOTIFIED_EVENT_ALERTS_PATH, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Error reading notified-event-alerts.json:', e);
+  }
+  return [];
+}
+
+export function markEventAlertNotified(alertId: string) {
+  const ids = readNotifiedEventAlertIds();
+  if (ids.includes(alertId)) return;
+  ids.push(alertId);
+  // Keep only the last 500 alert IDs
+  const trimmed = ids.slice(-500);
+  fs.writeFileSync(NOTIFIED_EVENT_ALERTS_PATH, JSON.stringify(trimmed, null, 2), 'utf-8');
+}
+
 export interface OddsRow {
   bookmaker: string;
   bookmakerKey: string;

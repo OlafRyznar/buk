@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { runScraper } from '@/lib/scraper';
+import { buildMatchFeed } from '@/lib/match-feed';
 import fs from 'fs';
 import path from 'path';
 
@@ -15,6 +16,7 @@ const globalFlags = globalThis as unknown as {
 const COOLDOWN_MIN = Math.max(0, Number(process.env.SCRAPE_COOLDOWN_MIN) || 2);
 
 const FILE_PATH = path.join(process.cwd(), 'src', 'lib', 'scraped-data.json');
+const FEED_PATH = path.join(process.cwd(), 'public', 'match-feed.json');
 
 function readFileStats(): { mtime: number | null; count: number } {
   try {
@@ -72,6 +74,9 @@ export async function POST() {
     }
 
     fs.writeFileSync(FILE_PATH, JSON.stringify(events, null, 2), 'utf-8');
+    // Keep the browser-readable feed in sync — MatchAlertWatcher fires e-mail
+    // alerts only for events present here, so a stale feed silently drops them.
+    fs.writeFileSync(FEED_PATH, JSON.stringify(buildMatchFeed(events)), 'utf-8');
 
     return NextResponse.json({
       success: true,

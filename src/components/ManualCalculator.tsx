@@ -79,9 +79,23 @@ export default function ManualCalculator() {
     setMode(nextMode);
     setEventName(event.eventName);
     setSportTitle(event.sportTitle);
+
+    const homeOutcome = event.outcomes.find((o) => o.name === event.homeTeam);
+    const awayOutcome = event.outcomes.find((o) => o.name === event.awayTeam);
+    const drawOutcome = event.outcomes.find(
+      (o) => o.name !== event.homeTeam && o.name !== event.awayTeam
+    );
+
     setRows(
-      buildRowsForMode(nextMode, []).map((row, i) => {
-        const outcome = event.outcomes[i];
+      buildRowsForMode(nextMode, []).map((row) => {
+        let outcome: typeof event.outcomes[0] | undefined;
+        if (row.outcome === "1") {
+          outcome = homeOutcome;
+        } else if (row.outcome === "2") {
+          outcome = awayOutcome;
+        } else if (row.outcome === "X") {
+          outcome = drawOutcome;
+        }
         return outcome
           ? { ...row, odds: outcome.bestOdds.toFixed(2), bookmakerKey: outcome.bestBookmakerKey }
           : row;

@@ -117,7 +117,7 @@ export default async function MarginsPage() {
           </p>
           <p className="mt-2">
             Tabela pokazuje <span className="font-medium text-white/85">średnią ze wszystkich
-            zeskanowanych meczów</span> danego bukmachera (kolumna „Próbka" mówi z ilu).
+            zeskanowanych meczów</span> danego bukmachera (kolumna &quot;Próbka&quot; mówi z ilu).
             Mała próbka = mniej wiarygodna średnia. Marże poniżej 3% to poziom bukmacherów
             referencyjnych, idealnych do arbitrażu.
           </p>

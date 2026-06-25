@@ -47,6 +47,33 @@ export interface EventAlertRow {
   thresholdPrice?: number;
 }
 
+export interface UserEventAlert extends EventAlertRow {
+  email: string;
+}
+
+// All of a user's event subscriptions (across every match) — used by the
+// client watcher to fire ONLY the alerts the user explicitly added.
+export async function fetchUserEventAlerts(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<UserEventAlert[]> {
+  const { data, error } = await supabase
+    .from("event_alerts")
+    .select("id, event_id, email, type, minutes_before, at_time, outcome_name, threshold_price")
+    .eq("user_id", userId);
+  if (error || !data) return [];
+  return data.map((r) => ({
+    id: r.id,
+    eventId: r.event_id,
+    email: r.email,
+    type: r.type,
+    minutesBefore: r.minutes_before ?? undefined,
+    atTime: r.at_time ?? undefined,
+    outcomeName: r.outcome_name ?? undefined,
+    thresholdPrice: r.threshold_price ?? undefined,
+  }));
+}
+
 export async function fetchEventAlerts(supabase: SupabaseClient, eventId: string): Promise<EventAlertRow[]> {
   const { data, error } = await supabase
     .from("event_alerts")
@@ -95,7 +122,11 @@ export async function addEventAlert(
   return !error;
 }
 
-export async function removeEventAlert(supabase: SupabaseClient, id: string): Promise<void> {
-  const { error } = await supabase.from("event_alerts").delete().eq("id", id);
-  if (error) console.error("[alerts-service] removeEventAlert failed:", error);
+export async function removeEventAlert(supabase: SupabaseClient, id: string): Promise<boolean> {
+  const { data, error } = await supabase.from("event_alerts").delete().eq("id", id).select();
+  if (error) {
+    console.error("[alerts-service] removeEventAlert failed:", error);
+    return false;
+  }
+  return data ? data.length > 0 : false;
 }

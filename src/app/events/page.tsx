@@ -1,6 +1,7 @@
 import EventsLeagueExplorer from "@/components/EventsLeagueExplorer";
 import EventsViewTabs from "@/components/EventsViewTabs";
 import WorldCupGroupCard from "@/components/WorldCupGroupCard";
+import WorldCupBracket from "@/components/WorldCupBracket";
 import { getAllEvents } from "@/lib/data-service";
 import { WORLD_CUP_GROUPS, groupLetterForMatch } from "@/lib/world-cup-groups";
 import { EventWithOdds } from "@/lib/types";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
   const events = await getAllEvents();
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
 
   const byGroup = new Map<string, { upcoming: EventWithOdds[]; finished: EventWithOdds[] }>();
@@ -30,18 +32,21 @@ export default async function EventsPage() {
   }
 
   const groupsView = (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {WORLD_CUP_GROUPS.map((group) => {
-        const bucket = byGroup.get(group.letter)!;
-        return (
-          <WorldCupGroupCard key={group.letter} group={group} upcoming={bucket.upcoming} finished={bucket.finished} />
-        );
-      })}
+    <div key="groups-view">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {WORLD_CUP_GROUPS.map((group) => {
+          const bucket = byGroup.get(group.letter)!;
+          return (
+            <WorldCupGroupCard key={group.letter} group={group} upcoming={bucket.upcoming} finished={bucket.finished} />
+          );
+        })}
+      </div>
+      <WorldCupBracket />
     </div>
   );
 
   const leagueView = (
-    <>
+    <div key="leagues-view">
       <EventsLeagueExplorer events={events} />
       {events.length === 0 && (
         <div className="glass-panel rounded-xl p-8 text-center sm:p-12">
@@ -49,7 +54,7 @@ export default async function EventsPage() {
           <p className="text-xs text-white/50">Nie znaleziono żadnych nadchodzących wydarzeń sportowych.</p>
         </div>
       )}
-    </>
+    </div>
   );
 
   return (

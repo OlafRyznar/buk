@@ -5,6 +5,7 @@ import ArbitrageCard from "@/components/ArbitrageCard";
 import TeamFlag from "@/components/TeamFlag";
 import WatchlistButton from "@/components/WatchlistButton";
 import EventAlertButton from "@/components/EventAlertButton";
+import AddToJournalButton from "@/components/AddToJournalButton";
 import BookmakerLink from "@/components/BookmakerLink";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -83,6 +84,20 @@ export default async function EventDetailPage({ params }: PageProps) {
                   eventName={`${event.homeTeam} vs ${event.awayTeam}`}
                   sportTitle={event.sportTitle}
                   outcomes={h2hMarket.outcomes.map(o => o.name)}
+                />
+              )}
+              {h2hMarket && (
+                <AddToJournalButton
+                  eventName={`${event.homeTeam} vs ${event.awayTeam}`}
+                  sportTitle={event.sportTitle}
+                  commenceTime={event.commenceTime}
+                  marketKey="h2h"
+                  outcomes={h2hMarket.outcomes.map((o) => ({
+                    name: o.name,
+                    odds: o.bestOdds.odds,
+                    bookmaker: o.bestOdds.bookmaker,
+                    bookmakerKey: o.bestOdds.bookmakerKey,
+                  }))}
                 />
               )}
             </div>
